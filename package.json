@@ -1,0 +1,27 @@
+{
+  "name": "savishkar-techfest",
+  "version": "1.0.0",
+  "description": "Complete College Techfest Website - Savishkar",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run client\" \"npm run server\"",
+    "client": "cd client && npm run dev",
+    "server": "cd server && npm run dev",
+    "install-all": "npm install && cd client && npm install && cd ../server && npm install",
+    "build": "cd client && npm run build"
+  },
+  "keywords": [
+    "techfest",
+    "college",
+    "events",
+    "registration"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "dependencies": {
+    "@studio-freight/lenis": "^1.0.42"
+  }
+}
