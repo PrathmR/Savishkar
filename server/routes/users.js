@@ -90,9 +90,7 @@ router.post(
         });
       }
 
-      // const serverUrl = process.env.SERVER_URL || 'http://localhost:5000';
-      const serverUrl =
-        process.env.SERVER_URL || "https://savishkar.onrender.com/";
+      const serverUrl = process.env.SERVER_URL || "http://localhost:5000";
       const avatarUrl = `${serverUrl}/uploads/avatars/${req.file.filename}`;
 
       res.json({
