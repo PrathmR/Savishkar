@@ -274,6 +274,40 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Serve React app in production
+if (process.env.NODE_ENV === 'production') {
+  const clientBuildPath = path.join(__dirname, '../client/dist');
+  
+  // Serve static files from React build
+  app.use(express.static(clientBuildPath, {
+    maxAge: '1d',
+    etag: true,
+    lastModified: true
+  }));
+  
+  // Handle React routing - send all non-API requests to index.html
+  app.get('*', (req, res) => {
+    // Don't handle API routes
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({
+        success: false,
+        message: 'API route not found'
+      });
+    }
+    
+    // Send React app for all other routes
+    res.sendFile(path.join(clientBuildPath, 'index.html'));
+  });
+} else {
+  // Development mode - API only
+  app.use((req, res) => {
+    res.status(404).json({
+      success: false,
+      message: 'Route not found'
+    });
+  });
+}
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -281,14 +315,6 @@ app.use((err, req, res, next) => {
     success: false,
     message: err.message || 'Internal Server Error',
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-  });
-});
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Route not found'
   });
 });
 
