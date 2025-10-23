@@ -494,50 +494,47 @@ router.post('/admin-register', protect, authorize('admin'), async (req, res) => 
       console.log('   User Code:', user.userCode);
       console.log('   User ID:', user._id);
       
-      // Send welcome email with credentials
-      try {
-        await sendEmail({
-          email: user.email,
-          subject: 'Welcome to Savishkar 2025 - Account Created',
-          html: `
-            <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #FEF3E2; padding: 30px; border-radius: 12px; border: 2px solid #5C4033;">
-              <h1 style="color: #1e40af; text-align: center; margin-bottom: 20px; font-size: 28px;">Welcome to Savishkar 2025! 🎉</h1>
-              <p style="color: #2C1810; font-size: 16px;">Hi ${user.name},</p>
-              <p style="color: #2C1810;">An account has been created for you by the admin team. Here are your login credentials:</p>
-              
-              <div style="background: #f5f5dc; padding: 25px; border-radius: 10px; margin: 25px 0; border: 2px solid #8b4513;">
-                <h3 style="margin-top: 0; color: #1e40af; font-size: 20px;">Login Credentials:</h3>
-                <p style="color: #2C1810;"><strong>Email:</strong> ${user.email}</p>
-                <p style="color: #2C1810;"><strong>Temporary Password:</strong> <span style="color: #8b4513; font-family: monospace; font-size: 16px;">${tempPassword}</span></p>
-              </div>
-              
-              <div style="background: linear-gradient(135deg, #FA812F 0%, #FAB12F 100%); padding: 30px; border-radius: 12px; text-align: center; margin: 25px 0; box-shadow: 0 4px 15px rgba(250, 129, 47, 0.3); overflow-x: auto;">
-                <p style="color: #FEF3E2; font-size: 14px; margin: 0 0 10px 0; font-weight: 600; letter-spacing: 2px;">YOUR UNIQUE CODE</p>
-                <h2 style="color: #FEF3E2; font-size: 32px; margin: 0; letter-spacing: 2px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); white-space: nowrap; display: inline-block;">${user.userCode}</h2>
-              </div>
-              
-              <div style="background: rgba(250, 177, 47, 0.1); padding: 20px; border-radius: 8px; border-left: 4px solid #FA812F; margin: 20px 0;">
-                <p style="color: #2C1810; margin: 0; font-weight: 600;">⚠️ Important:</p>
-                <ul style="color: #5C4033; margin: 10px 0; padding-left: 20px;">
-                  <li>Please change your password after first login</li>
-                  <li>Keep your unique code safe - you'll need it for event check-ins</li>
-                  <li>This code is unique to you and cannot be changed</li>
-                </ul>
-              </div>
-              
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/login" style="display: inline-block; background: linear-gradient(to right, #FA812F, #FAB12F); color: #FEF3E2; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Login Now</a>
-              </div>
-              
-              <hr style="margin: 30px 0; border: none; border-top: 2px solid #5C4033;">
-              <p style="color: #5C4033; font-size: 12px; text-align: center; font-weight: 600;">Savishkar 2025 - Where Innovation Meets Excellence</p>
+      // Send welcome email with credentials - NON-BLOCKING
+      sendEmail({
+        email: user.email,
+        subject: 'Welcome to Savishkar 2025 - Account Created',
+        html: `
+          <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #FEF3E2; padding: 30px; border-radius: 12px; border: 2px solid #5C4033;">
+            <h1 style="color: #1e40af; text-align: center; margin-bottom: 20px; font-size: 28px;">Welcome to Savishkar 2025! 🎉</h1>
+            <p style="color: #2C1810; font-size: 16px;">Hi ${user.name},</p>
+            <p style="color: #2C1810;">An account has been created for you by the admin team. Here are your login credentials:</p>
+            
+            <div style="background: #f5f5dc; padding: 25px; border-radius: 10px; margin: 25px 0; border: 2px solid #8b4513;">
+              <h3 style="margin-top: 0; color: #1e40af; font-size: 20px;">Login Credentials:</h3>
+              <p style="color: #2C1810;"><strong>Email:</strong> ${user.email}</p>
+              <p style="color: #2C1810;"><strong>Temporary Password:</strong> <span style="color: #8b4513; font-family: monospace; font-size: 16px;">${tempPassword}</span></p>
             </div>
-          `
-        });
-        console.log('✅ Welcome email with credentials sent to', user.email);
-      } catch (emailError) {
-        console.error('❌ Email error:', emailError.message);
-      }
+            
+            <div style="background: linear-gradient(135deg, #FA812F 0%, #FAB12F 100%); padding: 30px; border-radius: 12px; text-align: center; margin: 25px 0; box-shadow: 0 4px 15px rgba(250, 129, 47, 0.3); overflow-x: auto;">
+              <p style="color: #FEF3E2; font-size: 14px; margin: 0 0 10px 0; font-weight: 600; letter-spacing: 2px;">YOUR UNIQUE CODE</p>
+              <h2 style="color: #FEF3E2; font-size: 32px; margin: 0; letter-spacing: 2px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); white-space: nowrap; display: inline-block;">${user.userCode}</h2>
+            </div>
+            
+            <div style="background: rgba(250, 177, 47, 0.1); padding: 20px; border-radius: 8px; border-left: 4px solid #FA812F; margin: 20px 0;">
+              <p style="color: #2C1810; margin: 0; font-weight: 600;">⚠️ Important:</p>
+              <ul style="color: #5C4033; margin: 10px 0; padding-left: 20px;">
+                <li>Please change your password after first login</li>
+                <li>Keep your unique code safe - you'll need it for event check-ins</li>
+                <li>This code is unique to you and cannot be changed</li>
+              </ul>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/login" style="display: inline-block; background: linear-gradient(to right, #FA812F, #FAB12F); color: #FEF3E2; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Login Now</a>
+            </div>
+            
+            <hr style="margin: 30px 0; border: none; border-top: 2px solid #5C4033;">
+            <p style="color: #5C4033; font-size: 12px; text-align: center; font-weight: 600;">Savishkar 2025 - Where Innovation Meets Excellence</p>
+          </div>
+        `
+      })
+      .then(() => console.log('✅ Welcome email with credentials sent to', user.email))
+      .catch(emailError => console.error('❌ Email error:', emailError.message));
     } else if (userId) {
       // Use existing user
       user = await User.findById(userId);
@@ -724,101 +721,104 @@ router.post('/admin-register', protect, authorize('admin'), async (req, res) => 
     // Increment participant count (only once for the team, not per member)
     await event.incrementParticipants();
     
-    // Send login credentials ONLY to new team members (not event registration)
-    for (const memberCred of newTeamMemberCredentials) {
-      try {
-        await sendEmail({
-          email: memberCred.user.email,
-          subject: 'Welcome to Savishkar 2025 - Account Created',
-          html: `
-            <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #FEF3E2; padding: 30px; border-radius: 12px; border: 2px solid #5C4033;">
-              <h1 style="color: #1e40af; text-align: center; margin-bottom: 20px; font-size: 28px;">Welcome to Savishkar 2025! 🎉</h1>
-              <p style="color: #2C1810; font-size: 16px;">Hi ${memberCred.user.name},</p>
-              <p style="color: #2C1810;">An account has been created for you by the admin team. Here are your login credentials:</p>
-              
-              <div style="background: #f5f5dc; padding: 25px; border-radius: 10px; margin: 25px 0; border: 2px solid #8b4513;">
-                <h3 style="margin-top: 0; color: #1e40af; font-size: 20px;">Login Credentials:</h3>
-                <p style="color: #2C1810;"><strong>Email:</strong> ${memberCred.user.email}</p>
-                <p style="color: #2C1810;"><strong>Temporary Password:</strong> <span style="color: #8b4513; font-family: monospace; font-size: 16px;">${memberCred.tempPassword}</span></p>
+    // Send login credentials ONLY to new team members (not event registration) - NON-BLOCKING
+    if (newTeamMemberCredentials.length > 0) {
+      // Send emails asynchronously without blocking the response
+      Promise.all(
+        newTeamMemberCredentials.map(memberCred =>
+          sendEmail({
+            email: memberCred.user.email,
+            subject: 'Welcome to Savishkar 2025 - Account Created',
+            html: `
+              <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #FEF3E2; padding: 30px; border-radius: 12px; border: 2px solid #5C4033;">
+                <h1 style="color: #1e40af; text-align: center; margin-bottom: 20px; font-size: 28px;">Welcome to Savishkar 2025! 🎉</h1>
+                <p style="color: #2C1810; font-size: 16px;">Hi ${memberCred.user.name},</p>
+                <p style="color: #2C1810;">An account has been created for you by the admin team. Here are your login credentials:</p>
+                
+                <div style="background: #f5f5dc; padding: 25px; border-radius: 10px; margin: 25px 0; border: 2px solid #8b4513;">
+                  <h3 style="margin-top: 0; color: #1e40af; font-size: 20px;">Login Credentials:</h3>
+                  <p style="color: #2C1810;"><strong>Email:</strong> ${memberCred.user.email}</p>
+                  <p style="color: #2C1810;"><strong>Temporary Password:</strong> <span style="color: #8b4513; font-family: monospace; font-size: 16px;">${memberCred.tempPassword}</span></p>
+                </div>
+                
+                <div style="background: linear-gradient(135deg, #FA812F 0%, #FAB12F 100%); padding: 30px; border-radius: 12px; text-align: center; margin: 25px 0; box-shadow: 0 4px 15px rgba(250, 129, 47, 0.3);">
+                  <p style="color: #FEF3E2; font-size: 14px; margin: 0 0 10px 0; font-weight: 600; letter-spacing: 2px;">YOUR UNIQUE CODE</p>
+                  <h2 style="color: #FEF3E2; font-size: 32px; margin: 0; letter-spacing: 2px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.2);">${memberCred.user.userCode}</h2>
+                </div>
+                
+                <div style="background: rgba(250, 177, 47, 0.1); padding: 20px; border-radius: 8px; border-left: 4px solid #FA812F; margin: 20px 0;">
+                  <p style="color: #2C1810; margin: 0; font-weight: 600;">⚠️ Important:</p>
+                  <ul style="color: #5C4033; margin: 10px 0; padding-left: 20px;">
+                    <li>Please change your password after first login</li>
+                    <li>Keep your unique code safe - you'll need it for event check-ins</li>
+                    <li>This code is unique to you and cannot be changed</li>
+                    <li>You will receive a separate email with event registration details</li>
+                  </ul>
+                </div>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/login" style="display: inline-block; background: linear-gradient(to right, #FA812F, #FAB12F); color: #FEF3E2; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Login Now</a>
+                </div>
+                
+                <hr style="margin: 30px 0; border: none; border-top: 2px solid #5C4033;">
+                <p style="color: #5C4033; font-size: 12px; text-align: center; font-weight: 600;">Savishkar 2025 - Where Innovation Meets Excellence</p>
               </div>
-              
-              <div style="background: linear-gradient(135deg, #FA812F 0%, #FAB12F 100%); padding: 30px; border-radius: 12px; text-align: center; margin: 25px 0; box-shadow: 0 4px 15px rgba(250, 129, 47, 0.3);">
-                <p style="color: #FEF3E2; font-size: 14px; margin: 0 0 10px 0; font-weight: 600; letter-spacing: 2px;">YOUR UNIQUE CODE</p>
-                <h2 style="color: #FEF3E2; font-size: 32px; margin: 0; letter-spacing: 2px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.2);">${memberCred.user.userCode}</h2>
-              </div>
-              
-              <div style="background: rgba(250, 177, 47, 0.1); padding: 20px; border-radius: 8px; border-left: 4px solid #FA812F; margin: 20px 0;">
-                <p style="color: #2C1810; margin: 0; font-weight: 600;">⚠️ Important:</p>
-                <ul style="color: #5C4033; margin: 10px 0; padding-left: 20px;">
-                  <li>Please change your password after first login</li>
-                  <li>Keep your unique code safe - you'll need it for event check-ins</li>
-                  <li>This code is unique to you and cannot be changed</li>
-                  <li>You will receive a separate email with event registration details</li>
-                </ul>
-              </div>
-              
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/login" style="display: inline-block; background: linear-gradient(to right, #FA812F, #FAB12F); color: #FEF3E2; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Login Now</a>
-              </div>
-              
-              <hr style="margin: 30px 0; border: none; border-top: 2px solid #5C4033;">
-              <p style="color: #5C4033; font-size: 12px; text-align: center; font-weight: 600;">Savishkar 2025 - Where Innovation Meets Excellence</p>
-            </div>
-          `
-        });
-        console.log('✅ Login credentials email sent to new team member:', memberCred.user.email);
-      } catch (emailError) {
-        console.error('❌ Email error for team member:', emailError.message);
-      }
+            `
+          })
+          .then(() => console.log('✅ Login credentials email sent to new team member:', memberCred.user.email))
+          .catch(emailError => console.error('❌ Email error for team member:', emailError.message))
+        )
+      ).catch(err => console.error('❌ Error sending team member emails:', err.message));
     }
 
-    // Send registration email to user
-    try {
-      const emailContent = `
-        <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #FEF3E2; padding: 30px; border-radius: 12px; border: 2px solid #5C4033;">
-          <h1 style="color: #1e40af; text-align: center; margin-bottom: 20px; font-size: 28px;">Event Registration Created! 🎉</h1>
-          <p style="color: #2C1810; font-size: 16px;">Hi ${user.name},</p>
-          <p style="color: #2C1810;">You have been registered for <strong style="color: #1e40af;">${event.name}</strong> by the admin team!</p>
-          
-          <div style="background: #f5f5dc; padding: 25px; border-radius: 10px; margin: 25px 0; border: 2px solid #8b4513;">
-            <h3 style="margin-top: 0; color: #1e40af; font-size: 20px;">Registration Details:</h3>
-            <p style="color: #2C1810;"><strong>Registration Number:</strong> <span style="color: #8b4513;">${registration.registrationNumber}</span></p>
-            <p style="color: #2C1810;"><strong>Event:</strong> ${event.name}</p>
-            <p style="color: #2C1810;"><strong>Date:</strong> ${new Date(event.date).toLocaleDateString('en-IN')}</p>
-            <p style="color: #2C1810;"><strong>Time:</strong> ${event.time}</p>
-            <p style="color: #2C1810;"><strong>Venue:</strong> ${event.venue}</p>
-            ${registration.teamName ? `<p style="color: #2C1810;"><strong>Team Name:</strong> ${registration.teamName}</p>` : ''}
-            <p style="color: #2C1810;"><strong>Amount:</strong> <span style="color: #8b4513; font-size: 18px;">₹${registration.amount}</span></p>
-            <p style="color: #2C1810;"><strong>Payment Status:</strong> <span style="color: ${registration.paymentStatus === 'pending' ? '#8b4513' : '#2d7a3e'};">${registration.paymentStatus.toUpperCase()}</span></p>
-          </div>
-          
-          ${registration.amount > 0 && registration.paymentStatus === 'pending' ? 
-            `<div style="background: rgba(139, 69, 19, 0.1); padding: 20px; border-radius: 10px; border-left: 4px solid #8b4513; margin: 20px 0;">
-              <p style="color: #8b4513; margin: 0 0 10px 0; font-weight: bold;"><strong>⚠️ Payment Required</strong></p>
-              <p style="color: #5C4033; margin: 0;">Please login to your account and complete the payment to confirm your registration.</p>
-            </div>
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/login" style="display: inline-block; background: linear-gradient(to right, #FA812F, #FAB12F); color: #FEF3E2; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Login & Pay Now</a>
-            </div>` : 
-            `<div style="background: rgba(45, 122, 62, 0.1); padding: 20px; border-radius: 10px; border-left: 4px solid #2d7a3e; margin: 20px 0;">
-              <p style="color: #2d7a3e; margin: 0; font-weight: bold;"><strong>✅ Your registration is confirmed!</strong></p>
-            </div>`
-          }
-          
-          <p style="color: #2C1810; text-align: center; font-size: 16px;">See you at the event!</p>
-          <hr style="margin: 30px 0; border: none; border-top: 2px solid #5C4033;">
-          <p style="color: #5C4033; font-size: 12px; text-align: center; font-weight: 600;">Savishkar 2025 - Where Innovation Meets Excellence</p>
+    // Send registration email to user - NON-BLOCKING
+    const emailContent = `
+      <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #FEF3E2; padding: 30px; border-radius: 12px; border: 2px solid #5C4033;">
+        <h1 style="color: #1e40af; text-align: center; margin-bottom: 20px; font-size: 28px;">Event Registration Created! 🎉</h1>
+        <p style="color: #2C1810; font-size: 16px;">Hi ${user.name},</p>
+        <p style="color: #2C1810;">You have been registered for <strong style="color: #1e40af;">${event.name}</strong> by the admin team!</p>
+        
+        <div style="background: #f5f5dc; padding: 25px; border-radius: 10px; margin: 25px 0; border: 2px solid #8b4513;">
+          <h3 style="margin-top: 0; color: #1e40af; font-size: 20px;">Registration Details:</h3>
+          <p style="color: #2C1810;"><strong>Registration Number:</strong> <span style="color: #8b4513;">${registration.registrationNumber}</span></p>
+          <p style="color: #2C1810;"><strong>Event:</strong> ${event.name}</p>
+          <p style="color: #2C1810;"><strong>Date:</strong> ${new Date(event.date).toLocaleDateString('en-IN')}</p>
+          <p style="color: #2C1810;"><strong>Time:</strong> ${event.time}</p>
+          <p style="color: #2C1810;"><strong>Venue:</strong> ${event.venue}</p>
+          ${registration.teamName ? `<p style="color: #2C1810;"><strong>Team Name:</strong> ${registration.teamName}</p>` : ''}
+          <p style="color: #2C1810;"><strong>Amount:</strong> <span style="color: #8b4513; font-size: 18px;">₹${registration.amount}</span></p>
+          <p style="color: #2C1810;"><strong>Payment Status:</strong> <span style="color: ${registration.paymentStatus === 'pending' ? '#8b4513' : '#2d7a3e'};">${registration.paymentStatus.toUpperCase()}</span></p>
         </div>
-      `;
+        
+        ${registration.amount > 0 && registration.paymentStatus === 'pending' ? 
+          `<div style="background: rgba(139, 69, 19, 0.1); padding: 20px; border-radius: 10px; border-left: 4px solid #8b4513; margin: 20px 0;">
+            <p style="color: #8b4513; margin: 0 0 10px 0; font-weight: bold;"><strong>⚠️ Payment Required</strong></p>
+            <p style="color: #5C4033; margin: 0;">Please login to your account and complete the payment to confirm your registration.</p>
+          </div>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/login" style="display: inline-block; background: linear-gradient(to right, #FA812F, #FAB12F); color: #FEF3E2; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Login & Pay Now</a>
+          </div>` : 
+          `<div style="background: rgba(45, 122, 62, 0.1); padding: 20px; border-radius: 10px; border-left: 4px solid #2d7a3e; margin: 20px 0;">
+            <p style="color: #2d7a3e; margin: 0; font-weight: bold;"><strong>✅ Your registration is confirmed!</strong></p>
+          </div>`
+        }
+        
+        <p style="color: #2C1810; text-align: center; font-size: 16px;">See you at the event!</p>
+        <hr style="margin: 30px 0; border: none; border-top: 2px solid #5C4033;">
+        <p style="color: #5C4033; font-size: 12px; text-align: center; font-weight: 600;">Savishkar 2025 - Where Innovation Meets Excellence</p>
+      </div>
+    `;
 
-      await sendEmail({
-        email: user.email,
-        subject: `Event Registration - ${event.name}`,
-        html: emailContent
-      });
-
+    // Send email and log notification asynchronously
+    sendEmail({
+      email: user.email,
+      subject: `Event Registration - ${event.name}`,
+      html: emailContent
+    })
+    .then(() => {
+      console.log('✅ Admin registration email sent to team leader:', user.email);
       // Log notification
-      await Notification.create({
+      return Notification.create({
         user: user._id,
         email: user.email,
         type: 'registration',
@@ -829,56 +829,52 @@ router.post('/admin-register', protect, authorize('admin'), async (req, res) => 
         relatedEvent: event._id,
         relatedRegistration: registration._id
       });
-
-      console.log('✅ Admin registration email sent to team leader:', user.email);
-    } catch (emailError) {
-      console.error('❌ Email error:', emailError.message);
-      // Continue even if email fails
-    }
+    })
+    .catch(emailError => console.error('❌ Email error:', emailError.message));
     
-    // Send event registration confirmation to ALL team members
-    for (const memberUser of teamMemberUsers) {
-      try {
-        const confirmationEmail = `
-          <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #FEF3E2; padding: 30px; border-radius: 12px; border: 2px solid #5C4033;">
-            <h1 style="color: #1e40af; text-align: center; margin-bottom: 20px; font-size: 28px;">Event Registration Confirmed! 🎉</h1>
-            <p style="color: #2C1810; font-size: 16px;">Hi ${memberUser.name},</p>
-            <p style="color: #2C1810;">You have been registered for <strong style="color: #1e40af;">${event.name}</strong> as part of team <strong>${teamName}</strong>!</p>
-            
-            <div style="background: #f5f5dc; padding: 25px; border-radius: 10px; margin: 25px 0; border: 2px solid #8b4513;">
-              <h3 style="margin-top: 0; color: #1e40af; font-size: 20px;">Event Details:</h3>
-              <p style="color: #2C1810;"><strong>Event:</strong> ${event.name}</p>
-              <p style="color: #2C1810;"><strong>Team Name:</strong> ${teamName}</p>
-              <p style="color: #2C1810;"><strong>Date:</strong> ${new Date(event.date).toLocaleDateString('en-IN')}</p>
-              <p style="color: #2C1810;"><strong>Time:</strong> ${event.time}</p>
-              <p style="color: #2C1810;"><strong>Venue:</strong> ${event.venue}</p>
+    // Send event registration confirmation to ALL team members - NON-BLOCKING
+    if (teamMemberUsers.length > 0) {
+      Promise.all(
+        teamMemberUsers.map(memberUser => {
+          const confirmationEmail = `
+            <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #FEF3E2; padding: 30px; border-radius: 12px; border: 2px solid #5C4033;">
+              <h1 style="color: #1e40af; text-align: center; margin-bottom: 20px; font-size: 28px;">Event Registration Confirmed! 🎉</h1>
+              <p style="color: #2C1810; font-size: 16px;">Hi ${memberUser.name},</p>
+              <p style="color: #2C1810;">You have been registered for <strong style="color: #1e40af;">${event.name}</strong> as part of team <strong>${teamName}</strong>!</p>
+              
+              <div style="background: #f5f5dc; padding: 25px; border-radius: 10px; margin: 25px 0; border: 2px solid #8b4513;">
+                <h3 style="margin-top: 0; color: #1e40af; font-size: 20px;">Event Details:</h3>
+                <p style="color: #2C1810;"><strong>Event:</strong> ${event.name}</p>
+                <p style="color: #2C1810;"><strong>Team Name:</strong> ${teamName}</p>
+                <p style="color: #2C1810;"><strong>Date:</strong> ${new Date(event.date).toLocaleDateString('en-IN')}</p>
+                <p style="color: #2C1810;"><strong>Time:</strong> ${event.time}</p>
+                <p style="color: #2C1810;"><strong>Venue:</strong> ${event.venue}</p>
+              </div>
+              
+              <div style="background: rgba(45, 122, 62, 0.1); padding: 20px; border-radius: 10px; border-left: 4px solid #2d7a3e; margin: 20px 0;">
+                <p style="color: #2d7a3e; margin: 0; font-weight: bold;"><strong>✅ Your registration is confirmed!</strong></p>
+                <p style="color: #5C4033; margin: 10px 0 0 0;">Please login to your account to view more details.</p>
+              </div>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/login" style="display: inline-block; background: linear-gradient(to right, #FA812F, #FAB12F); color: #FEF3E2; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">View Dashboard</a>
+              </div>
+              
+              <p style="color: #2C1810; text-align: center; font-size: 16px;">See you at the event!</p>
+              <hr style="margin: 30px 0; border: none; border-top: 2px solid #5C4033;">
+              <p style="color: #5C4033; font-size: 12px; text-align: center; font-weight: 600;">Savishkar 2025 - Where Innovation Meets Excellence</p>
             </div>
-            
-            <div style="background: rgba(45, 122, 62, 0.1); padding: 20px; border-radius: 10px; border-left: 4px solid #2d7a3e; margin: 20px 0;">
-              <p style="color: #2d7a3e; margin: 0; font-weight: bold;"><strong>✅ Your registration is confirmed!</strong></p>
-              <p style="color: #5C4033; margin: 10px 0 0 0;">Please login to your account to view more details.</p>
-            </div>
-            
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/login" style="display: inline-block; background: linear-gradient(to right, #FA812F, #FAB12F); color: #FEF3E2; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">View Dashboard</a>
-            </div>
-            
-            <p style="color: #2C1810; text-align: center; font-size: 16px;">See you at the event!</p>
-            <hr style="margin: 30px 0; border: none; border-top: 2px solid #5C4033;">
-            <p style="color: #5C4033; font-size: 12px; text-align: center; font-weight: 600;">Savishkar 2025 - Where Innovation Meets Excellence</p>
-          </div>
-        `;
-        
-        await sendEmail({
-          email: memberUser.email,
-          subject: `Event Registration Confirmed - ${event.name}`,
-          html: confirmationEmail
-        });
-        
-        console.log('✅ Event confirmation email sent to team member:', memberUser.email);
-      } catch (emailError) {
-        console.error('❌ Email error for team member confirmation:', emailError.message);
-      }
+          `;
+          
+          return sendEmail({
+            email: memberUser.email,
+            subject: `Event Registration Confirmed - ${event.name}`,
+            html: confirmationEmail
+          })
+          .then(() => console.log('✅ Event confirmation email sent to team member:', memberUser.email))
+          .catch(emailError => console.error('❌ Email error for team member confirmation:', emailError.message));
+        })
+      ).catch(err => console.error('❌ Error sending team member confirmation emails:', err.message));
     }
     
     res.status(201).json({
