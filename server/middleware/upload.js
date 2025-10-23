@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import fs from 'fs';
+import { paymentStorage, eventStorage as cloudEventStorage, avatarStorage as cloudAvatarStorage } from '../config/cloudinary.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -53,9 +54,15 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// Create multer upload instances
+// Determine if we should use cloud storage (based on environment)
+const useCloudStorage = process.env.USE_CLOUDINARY === 'true' && 
+                        process.env.CLOUDINARY_CLOUD_NAME && 
+                        process.env.CLOUDINARY_API_KEY && 
+                        process.env.CLOUDINARY_API_SECRET;
+
+// Create multer upload instances with cloud or local storage
 export const uploadAvatar = multer({
-  storage: avatarStorage,
+  storage: useCloudStorage ? cloudAvatarStorage : avatarStorage,
   limits: {
     fileSize: 5 * 1024 * 1024 // 5MB limit
   },
@@ -63,9 +70,29 @@ export const uploadAvatar = multer({
 });
 
 export const uploadEventImage = multer({
-  storage: eventStorage,
+  storage: useCloudStorage ? cloudEventStorage : eventStorage,
   limits: {
     fileSize: 10 * 1024 * 1024 // 10MB limit for event images
+  },
+  fileFilter: fileFilter
+});
+
+export const uploadPaymentScreenshot = multer({
+  storage: useCloudStorage ? paymentStorage : multer.diskStorage({
+    destination: (req, file, cb) => {
+      const paymentsDir = path.join(__dirname, '..', 'uploads', 'payments');
+      if (!fs.existsSync(paymentsDir)) {
+        fs.mkdirSync(paymentsDir, { recursive: true });
+      }
+      cb(null, paymentsDir);
+    },
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      cb(null, 'payment-' + uniqueSuffix + path.extname(file.originalname));
+    }
+  }),
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
   },
   fileFilter: fileFilter
 });

@@ -85,8 +85,8 @@ router.post('/upload-image', protect, authorize('admin'), uploadEventImage.singl
       });
     }
 
-    const serverUrl = process.env.SERVER_URL || 'http://localhost:5000';
-    const imageUrl = `${serverUrl}/uploads/events/${req.file.filename}`;
+    // Cloudinary returns full URL in req.file.path, local storage uses filename
+    const imageUrl = req.file.path || `${process.env.SERVER_URL || 'http://localhost:5000'}/uploads/events/${req.file.filename}`;
 
     res.json({
       success: true,

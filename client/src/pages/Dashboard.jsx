@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import API from '../services/api';
 import toast from 'react-hot-toast';
+import { getImageUrl } from '../utils/imageUtils';
 
 const Dashboard = () => {
   const { user, refreshUser } = useAuth();
@@ -177,14 +178,14 @@ const Dashboard = () => {
                 <div className="relative w-24 h-24 mx-auto mb-4 group">
                   {user?.avatar ? (
                     <img 
-                      src={user.avatar} 
+                      src={getImageUrl(user.avatar)} 
                       alt={user.name} 
                       className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
                       onError={(e) => {
                         console.error('Image failed to load:', user.avatar);
                         e.target.style.display = 'none';
                       }}
-                      onLoad={() => console.log('Image loaded successfully:', user.avatar)}
+                      onLoad={() => console.log('Image loaded successfully:', getImageUrl(user.avatar))}
                     />
                   ) : (
                     <div className="w-24 h-24 bg-gradient-to-r from-purple-600 to-violet-600 rounded-full flex items-center justify-center">

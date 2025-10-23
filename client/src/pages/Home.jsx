@@ -429,7 +429,7 @@ const Home = () => {
               </p>
               
               <a
-                href={`${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}/uploads/rulebook.pdf`}
+                href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/rulebook/download`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-primary text-base px-8 py-3 inline-flex items-center justify-center group"

@@ -7,6 +7,7 @@ import { useNotification } from '../context/NotificationContext';
 import API from '../services/api';
 import toast from 'react-hot-toast';
 import colleges from '../data/colleges';
+import { getImageUrl } from '../utils/imageUtils';
 
 const EventDetails = () => {
   const { id } = useParams();
@@ -299,14 +300,14 @@ const EventDetails = () => {
           >
             {event.image ? (
               <img 
-                src={event.image} 
+                src={getImageUrl(event.image)} 
                 alt={event.name} 
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   console.error('Event detail image failed to load:', event.image);
                   e.target.style.display = 'none';
                 }}
-                onLoad={() => console.log('Event detail image loaded:', event.image)}
+                onLoad={() => console.log('Event detail image loaded:', getImageUrl(event.image))}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">

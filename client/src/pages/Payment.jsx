@@ -5,6 +5,7 @@ import { CreditCard, Upload, CheckCircle, IndianRupee, Calendar, User, AlertCirc
 import { useNotification } from '../context/NotificationContext';
 import API from '../services/api';
 import toast from 'react-hot-toast';
+import { getImageUrl } from '../utils/imageUtils';
 
 const Payment = () => {
   const { registrationId } = useParams();
@@ -216,7 +217,7 @@ const Payment = () => {
                 <div className="bg-white rounded-lg p-4 mb-4">
                   {registration.event?.paymentQRCode ? (
                     <img 
-                      src={registration.event.paymentQRCode} 
+                      src={getImageUrl(registration.event.paymentQRCode)} 
                       alt="Payment QR Code" 
                       className="w-full max-w-xs mx-auto"
                     />

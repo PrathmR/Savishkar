@@ -7,7 +7,13 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
-    "create-admin": "node scripts/createAdmin.js"
+    "create-admin": "node scripts/createAdmin.js",
+    "setup-cloudinary": "node scripts/setupCloudinary.js",
+    "verify-cloudinary": "node scripts/verifyCloudinary.js",
+    "test-email": "node scripts/testEmail.js",
+    "diagnose-email": "node scripts/diagnoseEmail.js",
+    "check-email": "node scripts/checkEmailConfig.js",
+    "upload-rulebook": "node scripts/uploadRulebookToCloudinary.js"
   },
   "keywords": [
     "techfest",
@@ -18,6 +24,7 @@
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^2.4.3",
+    "cloudinary": "^1.41.3",
     "compression": "^1.8.1",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
@@ -31,6 +38,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.0.3",
     "multer": "^2.0.2",
+    "multer-storage-cloudinary": "^4.0.0",
     "nodemailer": "^6.9.7",
     "razorpay": "^2.9.2",
     "xss-clean": "^0.1.4"

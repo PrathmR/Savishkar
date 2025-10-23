@@ -5,6 +5,7 @@ import { Calendar, MapPin, Users, IndianRupee, Search, Filter, AlertCircle } fro
 import API from '../services/api';
 import toast from 'react-hot-toast';
 import { useNotification } from '../context/NotificationContext';
+import { getImageUrl } from '../utils/imageUtils';
 
 const Events = () => {
   const [events, setEvents] = useState([]);
@@ -187,14 +188,14 @@ const EventCard = ({ event, index }) => (
     <div className="relative h-48 -mx-6 -mt-6 mb-4 overflow-hidden rounded-t-2xl" style={{ backgroundColor: 'rgba(250, 177, 47, 0.1)' }}>
       {event.image ? (
         <img
-          src={event.image}
+          src={getImageUrl(event.image)}
           alt={event.name}
           className="w-full h-full object-cover transition-transform group-hover:scale-110"
           onError={(e) => {
             console.error('Event image failed to load:', event.image);
             e.target.src = 'https://via.placeholder.com/400x300/FAB12F/5C4033?text=' + encodeURIComponent(event.name);
           }}
-          onLoad={() => console.log('Event image loaded:', event.image)}
+          onLoad={() => console.log('Event image loaded:', getImageUrl(event.image))}
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center" style={{ background: 'linear-gradient(to bottom right, #FAB12F, #FA812F)' }}>

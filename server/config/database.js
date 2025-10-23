@@ -1,13 +1,27 @@
 import mongoose from 'mongoose';
 
 const connectDB = async () => {
+  console.log('\n🗄️  Connecting to MongoDB...');
+  console.log('─'.repeat(50));
+  
   try {
     const conn = await mongoose.connect(process.env.MONGODB_URI);
 
-    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+    console.log('✅ MongoDB Connected Successfully!');
+    console.log(`🌐 Host: ${conn.connection.host}`);
     console.log(`📊 Database: ${conn.connection.name}`);
+    console.log(`🔌 Port: ${conn.connection.port}`);
+    console.log(`📡 Ready State: ${conn.connection.readyState === 1 ? 'Connected' : 'Unknown'}`);
+    console.log('─'.repeat(50));
   } catch (error) {
-    console.error(`❌ MongoDB Connection Error: ${error.message}`);
+    console.log('❌ MongoDB Connection FAILED!');
+    console.log(`📛 Error: ${error.message}`);
+    console.log('\n💡 TROUBLESHOOTING:');
+    console.log('   1. Check MONGODB_URI is correct');
+    console.log('   2. Verify MongoDB Atlas IP whitelist (0.0.0.0/0 for all)');
+    console.log('   3. Check database user credentials');
+    console.log('   4. Ensure network access is configured');
+    console.log('─'.repeat(50));
     process.exit(1);
   }
 };

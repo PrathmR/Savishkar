@@ -1,39 +1,11 @@
 import express from 'express';
-import multer from 'multer';
-import path from 'path';
 import Payment from '../models/Payment.js';
 import Registration from '../models/Registration.js';
 import Event from '../models/Event.js';
 import { protect, authorize } from '../middleware/auth.js';
+import { uploadPaymentScreenshot } from '../middleware/upload.js';
 
 const router = express.Router();
-
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/payments/');
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'payment-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  fileFilter: function (req, file, cb) {
-    const allowedTypes = /jpeg|jpg|png|webp/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    
-    if (mimetype && extname) {
-      return cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed (JPEG, PNG, WebP)'));
-    }
-  }
-});
 
 // @route   POST /api/payments/create-order
 // @desc    Create payment order and get QR code details
@@ -116,7 +88,7 @@ router.post('/create-order', protect, async (req, res) => {
 // @route   POST /api/payments/offline
 // @desc    Submit offline payment proof (screenshot + UTR) - User submission
 // @access  Private
-router.post('/offline', protect, upload.single('screenshot'), async (req, res) => {
+router.post('/offline', protect, uploadPaymentScreenshot.single('screenshot'), async (req, res) => {
   try {
     const { registrationId, utrNumber, amount } = req.body;
     const screenshot = req.file;
@@ -162,8 +134,8 @@ router.post('/offline', protect, upload.single('screenshot'), async (req, res) =
       });
     }
 
-    // Store screenshot URL
-    const screenshotUrl = `/uploads/payments/${screenshot.filename}`;
+    // Cloudinary returns full URL in screenshot.path, local storage uses filename
+    const screenshotUrl = screenshot.path || `${process.env.SERVER_URL || 'http://localhost:5000'}/uploads/payments/${screenshot.filename}`;
 
     // Create or update payment record
     let payment = await Payment.findOne({ registration: registrationId });

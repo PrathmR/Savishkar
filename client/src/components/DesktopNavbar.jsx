@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogOut, User, LayoutDashboard, ChevronDown, BookOpen } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { getImageUrl } from '../utils/imageUtils';
 
 const DesktopNavbar = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -81,7 +82,7 @@ const DesktopNavbar = () => {
             <NavLink to="/">Home</NavLink>
             <NavLink to="/events">Events</NavLink>
             <a
-              href={`${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}/uploads/rulebook.pdf`}
+              href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/rulebook/download`}
               target="_blank"
               rel="noopener noreferrer"
               className="transition-all duration-300 relative group font-bold text-sm tracking-wide flex items-center gap-1"
@@ -109,7 +110,7 @@ const DesktopNavbar = () => {
                     >
                       {user.avatar ? (
                         <img 
-                          src={user.avatar} 
+                          src={getImageUrl(user.avatar)} 
                           alt={user.name}
                           className="w-8 h-8 rounded-full object-cover border-2 border-gray-600"
                           onError={(e) => {

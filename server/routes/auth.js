@@ -132,36 +132,42 @@ router.post('/signup', signupLimiter, [
     // Log OTP to console for testing (when email fails)
     console.log('🔐 OTP for', user.email, ':', otp);
 
-    // Send OTP email
-    try {
-      await sendEmail({
-        email: user.email,
-        subject: 'Verify Your Email - Savishkar 2025',
-        html: `
-          <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #FEF3E2; padding: 40px; border-radius: 12px; border: 3px solid #5C4033;">
-            <h1 style="color: #1e40af; text-align: center; margin-bottom: 30px; font-size: 32px; font-weight: bold;">Welcome to Savishkar 2025!</h1>
-            <p style="color: #8b4513; font-size: 18px; margin-bottom: 10px;">Hi ${user.name},</p>
-            <p style="color: #8b4513; font-size: 16px; margin-bottom: 30px;">Your OTP is:</p>
-            <div style="background: #FFF8DC; padding: 30px; border-radius: 12px; text-align: center; margin: 30px 0; border: 3px solid #FAB12F; box-shadow: 0 4px 12px rgba(250, 177, 47, 0.3);">
-              <h2 style="color: #000000; font-size: 42px; margin: 0; letter-spacing: 8px; font-weight: bold; white-space: nowrap; overflow-x: auto;">${otp}</h2>
-            </div>
-            <p style="color: #8b4513; font-size: 16px; margin-top: 30px;">⏰ <strong>This OTP will expire in 10 minutes.</strong></p>
-            <hr style="margin: 40px 0; border: none; border-top: 2px solid #5C4033;">
-            <p style="color: #1e40af; font-size: 14px; text-align: center; font-weight: 600; margin: 0;">Savishkar 2025 - Where Innovation Meets Excellence</p>
-          </div>
-        `
-      });
-      console.log('✅ Email sent successfully to', user.email);
-    } catch (emailError) {
-      console.error('❌ Email error:', emailError.message);
-      console.log('⚠️ Email failed but OTP is logged above. User can still verify.');
-      // Continue even if email fails
-    }
-
+    // Send response immediately, then send email in background
     res.status(201).json({
       success: true,
       message: 'OTP sent to your email. Please verify to complete registration.',
       userId: user._id
+    });
+
+    // Send OTP email asynchronously (non-blocking)
+    setImmediate(async () => {
+      console.log('📤 Starting email send process for:', user.email);
+      try {
+        await sendEmail({
+          email: user.email,
+          subject: 'Verify Your Email - Savishkar 2025',
+          html: `
+            <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #FEF3E2; padding: 40px; border-radius: 12px; border: 3px solid #5C4033;">
+              <h1 style="color: #1e40af; text-align: center; margin-bottom: 30px; font-size: 32px; font-weight: bold;">Welcome to Savishkar 2025!</h1>
+              <p style="color: #8b4513; font-size: 18px; margin-bottom: 10px;">Hi ${user.name},</p>
+              <p style="color: #8b4513; font-size: 16px; margin-bottom: 30px;">Your OTP is:</p>
+              <div style="background: #FFF8DC; padding: 30px; border-radius: 12px; text-align: center; margin: 30px 0; border: 3px solid #FAB12F; box-shadow: 0 4px 12px rgba(250, 177, 47, 0.3);">
+                <h2 style="color: #000000; font-size: 42px; margin: 0; letter-spacing: 8px; font-weight: bold; white-space: nowrap; overflow-x: auto;">${otp}</h2>
+              </div>
+              <p style="color: #8b4513; font-size: 16px; margin-top: 30px;">⏰ <strong>This OTP will expire in 10 minutes.</strong></p>
+              <hr style="margin: 40px 0; border: none; border-top: 2px solid #5C4033;">
+              <p style="color: #1e40af; font-size: 14px; text-align: center; font-weight: 600; margin: 0;">Savishkar 2025 - Where Innovation Meets Excellence</p>
+            </div>
+          `
+        });
+        console.log('✅ OTP Email sent successfully to', user.email);
+      } catch (emailError) {
+        console.error('❌ OTP Email failed for', user.email);
+        console.error('❌ Error type:', emailError.name);
+        console.error('❌ Error message:', emailError.message);
+        console.error('❌ Full error:', emailError);
+        console.log('⚠️ Email failed but OTP is logged above. User can still verify.');
+      }
     });
   } catch (error) {
     console.error('Signup error:', error);
@@ -227,46 +233,10 @@ router.post('/verify-otp', async (req, res) => {
     user.emailVerificationExpire = undefined;
     await user.save();
 
-    // Send welcome email with user code
-    try {
-      await sendEmail({
-        email: user.email,
-        subject: 'Welcome to Savishkar 2025 - Your Unique Code',
-        html: `
-          <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #FEF3E2; padding: 30px; border-radius: 12px; border: 2px solid #5C4033;">
-            <h1 style="color: #1e40af; text-align: center; margin-bottom: 20px; font-size: 28px;">🎉 Welcome to Savishkar 2025!</h1>
-            <p style="color: #2C1810; font-size: 16px;">Hi ${user.name},</p>
-            <p style="color: #2C1810;">Congratulations! Your registration is complete. Here's your unique participant code:</p>
-            <div style="background: linear-gradient(135deg, #FA812F 0%, #FAB12F 100%); padding: 30px; border-radius: 12px; text-align: center; margin: 25px 0; box-shadow: 0 4px 15px rgba(250, 129, 47, 0.3);">
-              <p style="color: #FEF3E2; font-size: 14px; margin: 0 0 10px 0; font-weight: 600; letter-spacing: 2px;">YOUR UNIQUE CODE</p>
-              <h2 style="color: #FEF3E2; font-size: 42px; margin: 0; letter-spacing: 4px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.2);">${user.userCode}</h2>
-            </div>
-            <div style="background: rgba(250, 177, 47, 0.1); padding: 20px; border-radius: 8px; border-left: 4px solid #FA812F; margin: 20px 0;">
-              <p style="color: #2C1810; margin: 0; font-weight: 600;">📌 Important:</p>
-              <ul style="color: #5C4033; margin: 10px 0; padding-left: 20px;">
-                <li>Keep this code safe - you'll need it for event check-ins</li>
-                <li>This code is unique to you and cannot be changed</li>
-                <li>You can always view it on your dashboard</li>
-              </ul>
-            </div>
-            <p style="color: #2C1810;">You can now explore events and register for competitions. We're excited to have you at Savishkar 2025!</p>
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/dashboard" style="display: inline-block; background: linear-gradient(to right, #FA812F, #FAB12F); color: #FEF3E2; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">View Dashboard</a>
-            </div>
-            <hr style="margin: 30px 0; border: none; border-top: 2px solid #5C4033;">
-            <p style="color: #5C4033; font-size: 12px; text-align: center; font-weight: 600;">Savishkar 2025 - Where Innovation Meets Excellence</p>
-          </div>
-        `
-      });
-      console.log('✅ Welcome email with user code sent to', user.email);
-    } catch (emailError) {
-      console.error('❌ Welcome email error:', emailError.message);
-      // Continue even if email fails
-    }
-
     // Generate token
     const token = generateToken(user._id);
 
+    // Send response immediately
     res.json({
       success: true,
       message: 'Email verified successfully!',
@@ -280,6 +250,48 @@ router.post('/verify-otp', async (req, res) => {
         role: user.role,
         avatar: user.avatar,
         userCode: user.userCode
+      }
+    });
+
+    // Send welcome email asynchronously (non-blocking)
+    setImmediate(async () => {
+      console.log('📤 Starting welcome email send process for:', user.email);
+      try {
+        await sendEmail({
+          email: user.email,
+          subject: 'Welcome to Savishkar 2025 - Your Unique Code',
+          html: `
+            <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #FEF3E2; padding: 30px; border-radius: 12px; border: 2px solid #5C4033;">
+              <h1 style="color: #1e40af; text-align: center; margin-bottom: 20px; font-size: 28px;">🎉 Welcome to Savishkar 2025!</h1>
+              <p style="color: #2C1810; font-size: 16px;">Hi ${user.name},</p>
+              <p style="color: #2C1810;">Congratulations! Your registration is complete. Here's your unique participant code:</p>
+              <div style="background: linear-gradient(135deg, #FA812F 0%, #FAB12F 100%); padding: 30px; border-radius: 12px; text-align: center; margin: 25px 0; box-shadow: 0 4px 15px rgba(250, 129, 47, 0.3);">
+                <p style="color: #FEF3E2; font-size: 14px; margin: 0 0 10px 0; font-weight: 600; letter-spacing: 2px;">YOUR UNIQUE CODE</p>
+                <h2 style="color: #FEF3E2; font-size: 42px; margin: 0; letter-spacing: 4px; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.2);">${user.userCode}</h2>
+              </div>
+              <div style="background: rgba(250, 177, 47, 0.1); padding: 20px; border-radius: 8px; border-left: 4px solid #FA812F; margin: 20px 0;">
+                <p style="color: #2C1810; margin: 0; font-weight: 600;">📌 Important:</p>
+                <ul style="color: #5C4033; margin: 10px 0; padding-left: 20px;">
+                  <li>Keep this code safe - you'll need it for event check-ins</li>
+                  <li>This code is unique to you and cannot be changed</li>
+                  <li>You can always view it on your dashboard</li>
+                </ul>
+              </div>
+              <p style="color: #2C1810;">You can now explore events and register for competitions. We're excited to have you at Savishkar 2025!</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/dashboard" style="display: inline-block; background: linear-gradient(to right, #FA812F, #FAB12F); color: #FEF3E2; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">View Dashboard</a>
+              </div>
+              <hr style="margin: 30px 0; border: none; border-top: 2px solid #5C4033;">
+              <p style="color: #5C4033; font-size: 12px; text-align: center; font-weight: 600;">Savishkar 2025 - Where Innovation Meets Excellence</p>
+            </div>
+          `
+        });
+        console.log('✅ Welcome email sent successfully to', user.email);
+      } catch (emailError) {
+        console.error('❌ Welcome email failed for', user.email);
+        console.error('❌ Error type:', emailError.name);
+        console.error('❌ Error message:', emailError.message);
+        console.error('❌ Full error:', emailError);
       }
     });
   } catch (error) {

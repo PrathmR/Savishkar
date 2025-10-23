@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Plus, X, Upload, Save } from 'lucide-react';
 import API from '../../services/api';
 import toast from 'react-hot-toast';
+import { getImageUrl } from '../../utils/imageUtils';
 
 const EditEvent = () => {
   const { id } = useParams();
@@ -81,11 +82,11 @@ const EditEvent = () => {
       });
       
       if (event.image) {
-        setImagePreview(event.image);
+        setImagePreview(getImageUrl(event.image));
       }
       
       if (event.paymentQRCode) {
-        setQrPreview(event.paymentQRCode);
+        setQrPreview(getImageUrl(event.paymentQRCode));
       }
     } catch (error) {
       toast.error('Failed to load event');

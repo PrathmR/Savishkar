@@ -36,6 +36,7 @@ Thumbs.db
 
 # Uploads (for local development)
 server/uploads/
+!server/uploads/rulebook.pdf
 
 # Testing
 coverage/

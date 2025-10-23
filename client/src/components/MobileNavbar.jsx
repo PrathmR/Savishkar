@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, LogOut, User, LayoutDashboard, BookOpen, Home, Calendar } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { getImageUrl } from '../utils/imageUtils';
 
 const MobileNavbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -75,7 +76,7 @@ const MobileNavbar = () => {
               <div className="flex items-center space-x-2 glass-effect px-2 py-1 rounded-lg" style={{ backgroundColor: 'rgba(255, 255, 255, 0.6)' }}>
                 {user.avatar ? (
                   <img 
-                    src={user.avatar} 
+                    src={getImageUrl(user.avatar)} 
                     alt={user.name}
                     className="w-6 h-6 rounded-full object-cover border border-gray-600"
                     onError={(e) => {
@@ -124,11 +125,11 @@ const MobileNavbar = () => {
               </MobileNavLink>
               
               <a
-                href={`${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}/uploads/rulebook.pdf`}
+                href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/rulebook/download`}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setIsOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 font-bold"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 font-bold text-sm tracking-wide"
                 style={{ color: '#8b4513', backgroundColor: 'rgba(250, 129, 47, 0.1)' }}
               >
                 <BookOpen className="w-5 h-5" />
@@ -156,7 +157,7 @@ const MobileNavbar = () => {
                     <div className="flex items-center space-x-3 mb-3">
                       {user.avatar ? (
                         <img 
-                          src={user.avatar} 
+                          src={getImageUrl(user.avatar)} 
                           alt={user.name}
                           className="w-12 h-12 rounded-full object-cover border-2 border-orange-400"
                           onError={(e) => {

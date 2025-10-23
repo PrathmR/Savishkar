@@ -10,11 +10,15 @@ import {
   Download,
   Edit,
   Trash2,
-  UserPlus
+  UserPlus,
+  Eye,
+  RefreshCw,
+  X
 } from 'lucide-react';
 import API from '../../services/api';
 import toast from 'react-hot-toast';
 import { colleges } from '../../data/colleges';
+import { getImageUrl } from '../../utils/imageUtils';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -47,21 +51,23 @@ const AdminDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const [eventsRes, registrationsRes] = await Promise.all([
+      const [eventsRes, registrationsRes, paymentsRes] = await Promise.all([
         API.get('/events'),
-        API.get('/registrations')
+        API.get('/registrations'),
+        API.get('/payments/all')
       ]);
 
       const eventsData = eventsRes.data.events;
       const registrationsData = registrationsRes.data.registrations;
+      const paymentsData = paymentsRes.data.payments || [];
 
       setEvents(eventsData);
       setRegistrations(registrationsData);
 
-      // Calculate stats
-      const totalRevenue = registrationsData
-        .filter(r => r.paymentStatus === 'completed')
-        .reduce((sum, r) => sum + r.amount, 0);
+      // Calculate stats - revenue from captured payments only
+      const totalRevenue = paymentsData
+        .filter(p => p.status === 'captured')
+        .reduce((sum, p) => sum + (p.amount || 0), 0);
 
       const pendingPayments = registrationsData
         .filter(r => r.paymentStatus === 'pending' || r.paymentStatus === 'verification_pending').length;
@@ -311,6 +317,45 @@ const Overview = ({ events, registrations }) => {
 };
 
 const EventsManagement = ({ events, onUpdate }) => {
+  const [viewingRegistrations, setViewingRegistrations] = useState(null);
+  const [registrationsData, setRegistrationsData] = useState([]);
+  const [loadingRegistrations, setLoadingRegistrations] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(null);
+
+  // Auto-refresh registrations every 10 seconds when viewing
+  useEffect(() => {
+    let interval;
+    if (viewingRegistrations && autoRefresh) {
+      fetchRegistrations(viewingRegistrations._id);
+      interval = setInterval(() => {
+        fetchRegistrations(viewingRegistrations._id);
+      }, 10000); // Refresh every 10 seconds
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [viewingRegistrations, autoRefresh]);
+
+  const fetchRegistrations = async (eventId) => {
+    try {
+      setLoadingRegistrations(true);
+      const { data } = await API.get(`/registrations/event/${eventId}`);
+      setRegistrationsData(data.registrations || []);
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error('Failed to fetch registrations:', error);
+      toast.error('Failed to load registrations');
+    } finally {
+      setLoadingRegistrations(false);
+    }
+  };
+
+  const handleViewRegistrations = async (event) => {
+    setViewingRegistrations(event);
+    await fetchRegistrations(event._id);
+  };
+
   const handleDownloadExcel = async (eventId, eventName) => {
     try {
       const response = await API.get(`/registrations/export/${eventId}`, {
@@ -351,6 +396,191 @@ const EventsManagement = ({ events, onUpdate }) => {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
+      {/* View Registrations Modal */}
+      {viewingRegistrations && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md"
+          style={{ backgroundColor: 'rgba(92, 64, 51, 0.7)' }}
+          onClick={() => setViewingRegistrations(null)}
+        >
+          <div 
+            className="max-w-7xl w-full rounded-2xl p-6 shadow-2xl max-h-[90vh] overflow-hidden flex flex-col" 
+            style={{ backgroundColor: '#FEF3E2' }} 
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex justify-between items-center mb-4 pb-4 border-b-2" style={{ borderColor: 'rgba(92, 64, 51, 0.2)' }}>
+              <div>
+                <h3 className="text-2xl font-bold" style={{ color: '#5C4033', fontFamily: 'Georgia, serif' }}>
+                  {viewingRegistrations.name} - Registrations
+                </h3>
+                <div className="flex items-center gap-4 mt-2">
+                  <span className="text-sm" style={{ color: '#FA812F' }}>
+                    Total: {registrationsData.length} registrations
+                  </span>
+                  {lastUpdated && (
+                    <span className="text-xs" style={{ color: '#5C4033', opacity: 0.6 }}>
+                      Last updated: {lastUpdated.toLocaleTimeString('en-IN')}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={autoRefresh}
+                    onChange={(e) => setAutoRefresh(e.target.checked)}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm font-semibold" style={{ color: '#5C4033' }}>
+                    Auto-refresh (10s)
+                  </span>
+                </label>
+                <button
+                  onClick={() => fetchRegistrations(viewingRegistrations._id)}
+                  disabled={loadingRegistrations}
+                  className="p-2 rounded-lg transition-all"
+                  style={{ 
+                    backgroundColor: 'rgba(250, 129, 47, 0.2)',
+                    color: '#FA812F',
+                    border: '2px solid rgba(250, 129, 47, 0.3)'
+                  }}
+                  title="Refresh now"
+                >
+                  <RefreshCw className={`w-5 h-5 ${loadingRegistrations ? 'animate-spin' : ''}`} />
+                </button>
+                <button 
+                  onClick={() => setViewingRegistrations(null)}
+                  className="transition-colors p-2 rounded-full hover:bg-black/10"
+                  style={{ color: '#5C4033' }}
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="overflow-auto flex-1">
+              {loadingRegistrations && registrationsData.length === 0 ? (
+                <div className="flex justify-center items-center py-20">
+                  <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2" style={{ borderColor: '#FA812F' }}></div>
+                </div>
+              ) : registrationsData.length === 0 ? (
+                <div className="text-center py-20">
+                  <Users className="w-16 h-16 mx-auto mb-4" style={{ color: '#5C4033', opacity: 0.4 }} />
+                  <p style={{ color: '#5C4033', opacity: 0.6 }}>No registrations yet</p>
+                </div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0" style={{ backgroundColor: '#FAB12F' }}>
+                    <tr>
+                      <th className="text-left py-3 px-4 font-bold text-white">S.No</th>
+                      <th className="text-left py-3 px-4 font-bold text-white">Reg No</th>
+                      <th className="text-left py-3 px-4 font-bold text-white">User Code</th>
+                      <th className="text-left py-3 px-4 font-bold text-white">Name</th>
+                      <th className="text-left py-3 px-4 font-bold text-white">Email</th>
+                      <th className="text-left py-3 px-4 font-bold text-white">Phone</th>
+                      <th className="text-left py-3 px-4 font-bold text-white">College</th>
+                      <th className="text-left py-3 px-4 font-bold text-white">Team Name</th>
+                      <th className="text-left py-3 px-4 font-bold text-white">Team Size</th>
+                      <th className="text-left py-3 px-4 font-bold text-white">Amount</th>
+                      <th className="text-left py-3 px-4 font-bold text-white">Payment Status</th>
+                      <th className="text-left py-3 px-4 font-bold text-white">Reg Date</th>
+                      <th className="text-left py-3 px-4 font-bold text-white">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {registrationsData.map((reg, index) => (
+                      <tr 
+                        key={reg._id} 
+                        className="border-b transition-colors hover:bg-white/30"
+                        style={{ borderColor: 'rgba(92, 64, 51, 0.1)' }}
+                      >
+                        <td className="py-3 px-4" style={{ color: '#5C4033' }}>{index + 1}</td>
+                        <td className="py-3 px-4 font-mono text-xs" style={{ color: '#5C4033' }}>{reg.registrationNumber || 'N/A'}</td>
+                        <td className="py-3 px-4 font-mono text-xs" style={{ color: '#5C4033' }}>{reg.user?.userCode || 'N/A'}</td>
+                        <td className="py-3 px-4 font-semibold" style={{ color: '#5C4033' }}>{reg.user?.name || 'N/A'}</td>
+                        <td className="py-3 px-4 text-xs" style={{ color: '#5C4033' }}>{reg.user?.email || 'N/A'}</td>
+                        <td className="py-3 px-4" style={{ color: '#5C4033' }}>{reg.user?.phone || 'N/A'}</td>
+                        <td className="py-3 px-4 text-xs" style={{ color: '#5C4033' }}>{reg.user?.college || 'N/A'}</td>
+                        <td className="py-3 px-4" style={{ color: '#5C4033' }}>{reg.teamName || 'Individual'}</td>
+                        <td className="py-3 px-4 text-center" style={{ color: '#5C4033' }}>{reg.teamMembers?.length || 1}</td>
+                        <td className="py-3 px-4 font-semibold" style={{ color: '#FA812F' }}>₹{reg.amount || 0}</td>
+                        <td className="py-3 px-4">
+                          <span 
+                            className="text-xs px-2 py-1 rounded-full font-bold"
+                            style={
+                              reg.paymentStatus === 'completed'
+                                ? { backgroundColor: '#16A34A', color: 'white' }
+                                : reg.paymentStatus === 'verification_pending'
+                                ? { backgroundColor: '#FBBF24', color: 'black' }
+                                : reg.paymentStatus === 'failed'
+                                ? { backgroundColor: '#DC2626', color: 'white' }
+                                : { backgroundColor: 'rgba(139, 69, 19, 0.2)', color: '#8b4513' }
+                            }
+                          >
+                            {reg.paymentStatus === 'completed' ? 'APPROVED' : 
+                             reg.paymentStatus === 'verification_pending' ? 'PENDING' : 
+                             reg.paymentStatus === 'failed' ? 'REJECTED' : 
+                             reg.paymentStatus?.toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-xs" style={{ color: '#5C4033' }}>
+                          {reg.registrationDate ? new Date(reg.registrationDate).toLocaleDateString('en-IN') : 'N/A'}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="text-xs px-2 py-1 rounded font-semibold" style={{ backgroundColor: 'rgba(92, 64, 51, 0.2)', color: '#5C4033' }}>
+                            {reg.status?.toUpperCase()}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            {/* Footer with summary */}
+            {registrationsData.length > 0 && (
+              <div className="mt-4 pt-4 border-t-2 flex justify-between items-center" style={{ borderColor: 'rgba(92, 64, 51, 0.2)' }}>
+                <div className="flex gap-6">
+                  <div>
+                    <span className="text-sm font-semibold" style={{ color: '#5C4033' }}>Total: </span>
+                    <span className="text-lg font-bold" style={{ color: '#FA812F' }}>{registrationsData.length}</span>
+                  </div>
+                  <div>
+                    <span className="text-sm font-semibold" style={{ color: '#5C4033' }}>Approved: </span>
+                    <span className="text-lg font-bold" style={{ color: '#16A34A' }}>
+                      {registrationsData.filter(r => r.paymentStatus === 'completed').length}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-sm font-semibold" style={{ color: '#5C4033' }}>Pending: </span>
+                    <span className="text-lg font-bold" style={{ color: '#FBBF24' }}>
+                      {registrationsData.filter(r => r.paymentStatus === 'verification_pending' || r.paymentStatus === 'pending').length}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-sm font-semibold" style={{ color: '#5C4033' }}>Rejected: </span>
+                    <span className="text-lg font-bold" style={{ color: '#DC2626' }}>
+                      {registrationsData.filter(r => r.paymentStatus === 'failed').length}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleDownloadExcel(viewingRegistrations._id, viewingRegistrations.slug || viewingRegistrations.name)}
+                  className="btn-primary flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Download Excel
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="rounded-2xl shadow-lg p-6" style={{ backgroundColor: '#FEF3E2', border: '2px solid rgba(92, 64, 51, 0.2)' }}>
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold" style={{ color: '#5C4033', fontFamily: 'Georgia, serif' }}>Manage Events</h2>
@@ -378,7 +608,7 @@ const EventsManagement = ({ events, onUpdate }) => {
                     <div className="flex items-start gap-3">
                       {event.image && (
                         <img 
-                          src={event.image} 
+                          src={getImageUrl(event.image)} 
                           alt={event.name}
                           className="w-16 h-16 rounded-lg object-cover"
                           onError={(e) => e.target.style.display = 'none'}
@@ -399,8 +629,8 @@ const EventsManagement = ({ events, onUpdate }) => {
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="text-right mr-4">
-                      <p className="text-sm text-gray-300">Participants</p>
-                      <p className="font-bold text-white">{event.currentParticipants}/{event.maxParticipants}</p>
+                      <p className="text-sm" style={{ color: '#5C4033', opacity: 0.7 }}>Participants</p>
+                      <p className="font-bold" style={{ color: '#FA812F' }}>{event.currentParticipants}/{event.maxParticipants}</p>
                     </div>
                     <Link
                       to={`/admin/events/edit/${event._id}`}
@@ -410,9 +640,21 @@ const EventsManagement = ({ events, onUpdate }) => {
                       <Edit className="w-4 h-4" />
                     </Link>
                     <button
+                      onClick={() => handleViewRegistrations(event)}
+                      className="flex items-center space-x-2 py-2 px-3 rounded-lg transition-all font-semibold"
+                      style={{ 
+                        backgroundColor: 'rgba(250, 129, 47, 0.2)',
+                        color: '#FA812F',
+                        border: '2px solid rgba(250, 129, 47, 0.3)'
+                      }}
+                      title="View registrations (Excel view)"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                    <button
                       onClick={() => handleDownloadExcel(event._id, event.slug || event.name)}
                       className="btn-secondary flex items-center space-x-2 py-2 px-3"
-                      title="Download participant list"
+                      title="Download Excel file"
                     >
                       <Download className="w-4 h-4" />
                     </button>

@@ -22,6 +22,7 @@ import userRoutes from './routes/users.js';
 import paymentRoutes from './routes/payments.js';
 import adminRoutes from './routes/admin.js';
 import testRoutes from './routes/test.js';
+import rulebookRoutes from './routes/rulebook.js';
 
 // Load environment variables
 dotenv.config();
@@ -32,7 +33,130 @@ const app = express();
 // Connect to database
 connectDB();
 
-// Ensure upload directories exist
+// Check email configuration on startup
+const checkEmailConfig = async () => {
+  console.log('\n📧 Checking Email Configuration...');
+  console.log('─'.repeat(50));
+  
+  try {
+    // Check if environment variables exist
+    if (!process.env.EMAIL_HOST || !process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.log('❌ Email: NOT CONFIGURED');
+      console.log('📋 Missing environment variables:');
+      if (!process.env.EMAIL_HOST) console.log('   ❌ EMAIL_HOST');
+      if (!process.env.EMAIL_PORT) console.log('   ⚠️  EMAIL_PORT (will default to 587)');
+      if (!process.env.EMAIL_USER) console.log('   ❌ EMAIL_USER');
+      if (!process.env.EMAIL_PASS) console.log('   ❌ EMAIL_PASS');
+      
+      if (process.env.NODE_ENV === 'production') {
+        console.log('\n⚠️  WARNING: Email features will not work in production!');
+        console.log('💡 Add these variables in Render Dashboard → Environment tab');
+      }
+      console.log('─'.repeat(50));
+      return;
+    }
+
+    // Log configuration details (without sensitive data)
+    console.log('📋 Email Configuration Found:');
+    console.log(`   Host: ${process.env.EMAIL_HOST}`);
+    console.log(`   Port: ${process.env.EMAIL_PORT || '587 (default)'}`);
+    console.log(`   User: ${process.env.EMAIL_USER}`);
+    console.log(`   Pass: ${'*'.repeat(12)}${process.env.EMAIL_PASS.slice(-4)}`);
+
+    // Import nodemailer to verify connection
+    console.log('\n🔌 Testing SMTP Connection...');
+    const nodemailer = (await import('nodemailer')).default;
+    const port = parseInt(process.env.EMAIL_PORT) || 587;
+    
+    const transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST,
+      port: port,
+      secure: port === 465,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      },
+      tls: {
+        rejectUnauthorized: false
+      },
+      connectionTimeout: 30000,
+      greetingTimeout: 30000,
+      socketTimeout: 45000
+    });
+
+    // Verify connection with timeout (don't block server startup)
+    const verifyPromise = transporter.verify();
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Verification timeout')), 10000)
+    );
+    
+    await Promise.race([verifyPromise, timeoutPromise]);
+    
+    console.log('✅ Email Server Connected Successfully!');
+    console.log(`📧 SMTP Host: ${process.env.EMAIL_HOST}:${port}`);
+    console.log(`👤 Sender: ${process.env.EMAIL_USER}`);
+    console.log(`🔒 Authentication: Verified`);
+    console.log(`⏱️  Timeouts: Connection(60s), Greeting(30s), Socket(60s)`);
+    console.log('─'.repeat(50));
+  } catch (error) {
+    console.log('❌ Email Server Connection FAILED!');
+    console.log(`📛 Error: ${error.message}`);
+    
+    // Provide specific troubleshooting tips
+    if (error.message.includes('Invalid login') || error.message.includes('Username and Password not accepted')) {
+      console.log('\n💡 SOLUTION - Invalid Credentials:');
+      console.log('   1. For Gmail: Use App Password, NOT regular password');
+      console.log('   2. Enable 2FA: https://myaccount.google.com/security');
+      console.log('   3. Generate App Password: https://myaccount.google.com/apppasswords');
+      console.log('   4. Remove ALL spaces from the App Password');
+      console.log('   5. Update EMAIL_PASS on Render and redeploy');
+    } else if (error.message.includes('ECONNECTION') || error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
+      console.log('\n💡 SOLUTION - Connection Timeout:');
+      console.log('   1. Verify EMAIL_HOST is correct (e.g., smtp.gmail.com)');
+      console.log('   2. Verify EMAIL_PORT is 587 (or 465 for SSL)');
+      console.log('   3. Check if port 587 is blocked by firewall');
+      console.log('   4. On Render Free tier: Service may be cold starting');
+    } else if (error.message.includes('EAUTH')) {
+      console.log('\n💡 SOLUTION - Authentication Error:');
+      console.log('   1. Check EMAIL_USER is your full email address');
+      console.log('   2. Check EMAIL_PASS is correct (no typos)');
+      console.log('   3. For Gmail: Ensure App Password is used');
+    } else {
+      console.log('\n💡 TROUBLESHOOTING:');
+      console.log('   1. Check all environment variables are set correctly');
+      console.log('   2. Run: npm run diagnose-email (locally)');
+      console.log('   3. Check Render logs for more details');
+    }
+    
+    console.log('─'.repeat(50));
+    
+    if (process.env.NODE_ENV === 'production') {
+      console.log('⚠️  Email features will be unavailable until this is fixed!');
+    }
+  }
+};
+
+checkEmailConfig();
+
+// Check Cloudinary configuration
+const useCloudinary = process.env.USE_CLOUDINARY === 'true' && 
+                      process.env.CLOUDINARY_CLOUD_NAME && 
+                      process.env.CLOUDINARY_API_KEY && 
+                      process.env.CLOUDINARY_API_SECRET;
+
+if (useCloudinary) {
+  console.log('☁️  Cloudinary: ENABLED');
+  console.log(`📦 Cloud Name: ${process.env.CLOUDINARY_CLOUD_NAME}`);
+  console.log('✅ File uploads will be stored in Cloudinary');
+} else {
+  console.log('💾 Cloudinary: DISABLED (using local storage)');
+  if (process.env.NODE_ENV === 'production') {
+    console.log('⚠️  WARNING: Local storage not recommended for production!');
+    console.log('   Set USE_CLOUDINARY=true and add Cloudinary credentials');
+  }
+}
+
+// Ensure upload directories exist (for local storage fallback)
 const uploadDirs = ['uploads/avatars', 'uploads/events', 'uploads/payments'];
 uploadDirs.forEach(dir => {
   const dirPath = path.join(__dirname, dir);
@@ -123,6 +247,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/test', testRoutes);
+app.use('/api/rulebook', rulebookRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

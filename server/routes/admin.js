@@ -4,6 +4,7 @@ import Event from '../models/Event.js';
 import Registration from '../models/Registration.js';
 import Payment from '../models/Payment.js';
 import Notification from '../models/Notification.js';
+import Settings from '../models/Settings.js';
 import { protect, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -216,6 +217,157 @@ router.post('/clear-database', protect, authorize('admin'), async (req, res) => 
       remainingAdmins: adminCount
     });
   } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// @route   GET /api/admin/settings
+// @desc    Get all settings
+// @access  Private/Admin
+router.get('/settings', protect, authorize('admin'), async (req, res) => {
+  try {
+    const settings = await Settings.find().sort({ category: 1, key: 1 });
+    
+    res.json({
+      success: true,
+      count: settings.length,
+      settings
+    });
+  } catch (error) {
+    console.error('Get settings error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// @route   GET /api/admin/settings/:key
+// @desc    Get a specific setting
+// @access  Private/Admin
+router.get('/settings/:key', protect, authorize('admin'), async (req, res) => {
+  try {
+    const setting = await Settings.findOne({ key: req.params.key });
+    
+    if (!setting) {
+      return res.status(404).json({
+        success: false,
+        message: 'Setting not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      setting
+    });
+  } catch (error) {
+    console.error('Get setting error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// @route   PUT /api/admin/settings/:key
+// @desc    Update a setting
+// @access  Private/Admin
+router.put('/settings/:key', protect, authorize('admin'), async (req, res) => {
+  try {
+    const { value, description, category, isPublic } = req.body;
+    
+    if (!value) {
+      return res.status(400).json({
+        success: false,
+        message: 'Value is required'
+      });
+    }
+    
+    const setting = await Settings.set(req.params.key, value, {
+      description,
+      category,
+      isPublic,
+      updatedBy: req.user._id
+    });
+    
+    console.log(`✅ Setting updated: ${req.params.key} by ${req.user.name}`);
+    
+    res.json({
+      success: true,
+      message: 'Setting updated successfully',
+      setting
+    });
+  } catch (error) {
+    console.error('Update setting error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// @route   POST /api/admin/settings
+// @desc    Create a new setting
+// @access  Private/Admin
+router.post('/settings', protect, authorize('admin'), async (req, res) => {
+  try {
+    const { key, value, description, category, isPublic } = req.body;
+    
+    if (!key || !value) {
+      return res.status(400).json({
+        success: false,
+        message: 'Key and value are required'
+      });
+    }
+    
+    const setting = await Settings.set(key, value, {
+      description,
+      category,
+      isPublic,
+      updatedBy: req.user._id
+    });
+    
+    console.log(`✅ Setting created: ${key} by ${req.user.name}`);
+    
+    res.status(201).json({
+      success: true,
+      message: 'Setting created successfully',
+      setting
+    });
+  } catch (error) {
+    console.error('Create setting error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// @route   DELETE /api/admin/settings/:key
+// @desc    Delete a setting
+// @access  Private/Admin
+router.delete('/settings/:key', protect, authorize('admin'), async (req, res) => {
+  try {
+    const setting = await Settings.findOneAndDelete({ key: req.params.key });
+    
+    if (!setting) {
+      return res.status(404).json({
+        success: false,
+        message: 'Setting not found'
+      });
+    }
+    
+    console.log(`✅ Setting deleted: ${req.params.key} by ${req.user.name}`);
+    
+    res.json({
+      success: true,
+      message: 'Setting deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete setting error:', error);
     res.status(500).json({
       success: false,
       message: error.message
