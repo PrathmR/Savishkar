@@ -2,6 +2,7 @@ import express from 'express';
 import Payment from '../models/Payment.js';
 import Registration from '../models/Registration.js';
 import Event from '../models/Event.js';
+import sendEmail from '../utils/sendEmail.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { uploadPaymentScreenshot } from '../middleware/upload.js';
 
@@ -259,7 +260,6 @@ router.post('/verify', protect, async (req, res) => {
         </div>
       `;
 
-      const sendEmail = (await import('../utils/sendEmail.js')).default;
       await sendEmail({
         email: req.user.email,
         subject: `Payment Confirmed - ${registration.event.name}`,
@@ -582,7 +582,6 @@ router.put('/:id/reject', protect, authorize('admin'), async (req, res) => {
         </div>
       `;
 
-      const sendEmail = (await import('../utils/sendEmail.js')).default;
       await sendEmail({
         email: payment.user.email,
         subject: `Payment Verification Failed - ${payment.event.name}`,

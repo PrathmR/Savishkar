@@ -32,6 +32,11 @@ const settingsSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// Disable autoIndex in production to speed up deployment
+if (process.env.NODE_ENV === 'production') {
+  settingsSchema.set('autoIndex', false);
+}
+
 // Index for faster lookups
 settingsSchema.index({ key: 1 });
 settingsSchema.index({ category: 1 });

@@ -1,9 +1,13 @@
-  import express from 'express';
+import express from 'express';
+import crypto from 'crypto';
 import ExcelJS from 'exceljs';
 import Registration from '../models/Registration.js';
 import Event from '../models/Event.js';
 import Notification from '../models/Notification.js';
+import User from '../models/User.js';
+import Payment from '../models/Payment.js';
 import sendEmail from '../utils/sendEmail.js';
+import generateUserCode from '../utils/generateUserCode.js';
 import { protect, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -94,7 +98,6 @@ router.post('/', protect, async (req, res) => {
     
     // Validate team members have Savishkar accounts (for team events)
     if (teamMembers && teamMembers.length > 0) {
-      const User = (await import('../models/User.js')).default;
       
       for (const member of teamMembers) {
         const memberUser = await User.findOne({ email: member.email.toLowerCase() });
@@ -376,10 +379,6 @@ router.post('/admin-register', protect, authorize('admin'), async (req, res) => 
   try {
     const { userId, eventId, teamName, teamMembers, newUser } = req.body;
     
-    // Import User model
-    const User = (await import('../models/User.js')).default;
-    const generateUserCode = (await import('../utils/generateUserCode.js')).default;
-    
     // ============================================
     // STEP 1: VALIDATE ALL EMAILS AND PHONES FIRST
     // ============================================
@@ -463,7 +462,6 @@ router.post('/admin-register', protect, authorize('admin'), async (req, res) => 
     if (newUser && newUser.name && newUser.email && newUser.phone && newUser.college) {
       
       // Generate a random password that meets validation requirements
-      const crypto = (await import('crypto')).default;
       const randomString = crypto.randomBytes(4).toString('hex');
       const tempPassword = `Sav${randomString}@2025`; // Format: SavXXXXXXXX@2025 (uppercase, lowercase, number, special char)
       
@@ -607,7 +605,6 @@ router.post('/admin-register', protect, authorize('admin'), async (req, res) => 
     
     // Process additional team members if provided
     if (teamMembers && teamMembers.length > 0) {
-      const crypto = (await import('crypto')).default;
       
       for (const member of teamMembers) {
         // Skip if member data is empty or incomplete
@@ -969,7 +966,6 @@ router.get('/export/:eventId', protect, authorize('admin'), async (req, res) => 
       .sort({ createdAt: 1 });
 
     // Get payment details for each registration
-    const Payment = (await import('../models/Payment.js')).default;
     const registrationIds = registrations.map(r => r._id);
     const payments = await Payment.find({ registration: { $in: registrationIds } });
     

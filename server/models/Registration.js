@@ -89,6 +89,11 @@ const registrationSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// Disable autoIndex in production to speed up deployment
+if (process.env.NODE_ENV === 'production') {
+  registrationSchema.set('autoIndex', false);
+}
+
 // Compound index to prevent duplicate registrations
 registrationSchema.index({ user: 1, event: 1 }, { unique: true });
 

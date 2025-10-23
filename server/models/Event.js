@@ -147,6 +147,11 @@ const eventSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// Disable autoIndex in production to speed up deployment
+if (process.env.NODE_ENV === 'production') {
+  eventSchema.set('autoIndex', false);
+}
+
 // Virtual for registration status
 eventSchema.virtual('isFull').get(function() {
   return this.currentParticipants >= this.maxParticipants;

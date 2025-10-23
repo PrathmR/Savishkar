@@ -50,6 +50,11 @@ const notificationSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// Disable autoIndex in production to speed up deployment
+if (process.env.NODE_ENV === 'production') {
+  notificationSchema.set('autoIndex', false);
+}
+
 // Indexes
 notificationSchema.index({ user: 1 });
 notificationSchema.index({ type: 1 });

@@ -67,9 +67,9 @@ const sendEmail = async (options) => {
         pass: process.env.EMAIL_PASS
       },
       // Production-optimized timeouts for Render
-      connectionTimeout: 60000,  // 60 seconds for cold starts
-      greetingTimeout: 30000,    // 30 seconds
-      socketTimeout: 60000,      // 60 seconds
+      connectionTimeout: 30000,  // 30 seconds
+      greetingTimeout: 20000,    // 20 seconds
+      socketTimeout: 30000,      // 30 seconds
       // TLS settings
       tls: {
         rejectUnauthorized: false,
@@ -103,11 +103,11 @@ const sendEmail = async (options) => {
       async () => {
         return await withTimeout(
           transporter.sendMail(mailOptions),
-          45000 // 45 second timeout per attempt
+          20000 // 20 second timeout per attempt
         );
       },
-      3, // 3 retry attempts
-      2000 // 2 second initial delay
+      2, // 2 retry attempts
+      1500 // 1.5 second initial delay
     );
     
     const duration = Date.now() - startTime;

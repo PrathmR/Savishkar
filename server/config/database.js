@@ -5,7 +5,16 @@ const connectDB = async () => {
   console.log('─'.repeat(50));
   
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI);
+    // Production-optimized connection settings
+    const options = {
+      maxPoolSize: 10,          // Maximum number of connections in the pool
+      minPoolSize: 2,           // Minimum number of connections to maintain
+      serverSelectionTimeoutMS: 5000,  // Timeout for selecting a server (5s)
+      socketTimeoutMS: 45000,   // Socket timeout (45s)
+      family: 4                 // Use IPv4, skip trying IPv6
+    };
+    
+    const conn = await mongoose.connect(process.env.MONGODB_URI, options);
 
     console.log('✅ MongoDB Connected Successfully!');
     console.log(`🌐 Host: ${conn.connection.host}`);

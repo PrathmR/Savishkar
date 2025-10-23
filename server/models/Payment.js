@@ -73,6 +73,11 @@ const paymentSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// Disable autoIndex in production to speed up deployment
+if (process.env.NODE_ENV === 'production') {
+  paymentSchema.set('autoIndex', false);
+}
+
 // Indexes
 paymentSchema.index({ user: 1 });
 paymentSchema.index({ registration: 1 });

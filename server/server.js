@@ -6,6 +6,7 @@ import mongoSanitize from 'express-mongo-sanitize';
 import xss from 'xss-clean';
 import hpp from 'hpp';
 import rateLimit from 'express-rate-limit';
+import compression from 'compression';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -136,7 +137,11 @@ const checkEmailConfig = async () => {
   }
 };
 
-checkEmailConfig();
+// Run email check in background - don't block server startup
+checkEmailConfig().catch(err => {
+  console.error('⚠️  Email configuration check failed:', err.message);
+  console.error('   Email features may not work properly');
+});
 
 // Check Cloudinary configuration
 const useCloudinary = process.env.USE_CLOUDINARY === 'true' && 
@@ -165,6 +170,17 @@ uploadDirs.forEach(dir => {
     console.log(`📁 Created directory: ${dir}`);
   }
 });
+
+// Compression middleware - compress all responses
+app.use(compression({
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    return compression.filter(req, res);
+  },
+  level: 6 // Balanced compression level
+}));
 
 // Security Middleware
 // Set security headers

@@ -80,6 +80,11 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// Disable autoIndex in production to speed up deployment
+if (process.env.NODE_ENV === 'production') {
+  userSchema.set('autoIndex', false);
+}
+
 // Hash password before saving
 userSchema.pre('save', async function(next) {
   try {
