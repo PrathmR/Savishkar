@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Calendar, Users, Trophy, ArrowRight, Zap, Target, Rocket, Clock, BookOpen, Download, Instagram, Mail, ChevronDown, ChevronLeft, ChevronRight, ArrowUp } from 'lucide-react';
+import { Calendar, Users, Trophy, ArrowRight, Zap, Target, Rocket, Clock, BookOpen, Download, Instagram, Mail, ChevronDown, ChevronLeft, ChevronRight, ArrowUp, X, Eye } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
 import { useLenisScroll } from '../hooks/useLenisScroll';
@@ -20,6 +20,9 @@ const Home = () => {
 
   // Back to Top Button State
   const [showBackToTop, setShowBackToTop] = useState(false);
+  
+  // Rulebook Modal State
+  const [showRulebookModal, setShowRulebookModal] = useState(false);
 
   // Photo Gallery State
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -51,8 +54,8 @@ const Home = () => {
   ];
 
   useEffect(() => {
-    // Set event date - November 6, 2025
-    const eventDate = new Date('2025-11-06T00:00:00').getTime();
+    // Set event date - November 12-13, 2025 (2 Days)
+    const eventDate = new Date('2025-11-12T00:00:00').getTime();
 
     const timer = setInterval(() => {
       const now = new Date().getTime();
@@ -104,6 +107,18 @@ const Home = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (showRulebookModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showRulebookModal]);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -309,7 +324,7 @@ const Home = () => {
             >
               <Clock className="w-12 h-12 mx-auto mb-4" style={{ color: '#1a365d' }} />
               <h3 className="text-4xl font-bold mb-2" style={{ color: '#1a365d', fontFamily: 'Georgia, serif' }}>
-                3 Days
+                2 Days
               </h3>
               <p className="text-sm" style={{ color: '#5C4033' }}>Of Innovation</p>
             </div>
@@ -328,11 +343,11 @@ const Home = () => {
               Event Schedule
             </h2>
             <p className="text-base max-w-2xl mx-auto" style={{ color: '#5C4033' }}>
-              Three days of innovation, competition, and celebration
+              Two days of innovation, competition, and celebration
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             {/* Day 1 */}
             <div
               className="card p-6 hover:-translate-y-1 transition-all duration-300"
@@ -344,7 +359,7 @@ const Home = () => {
                   <span className="text-sm font-bold" style={{ color: '#FEF3E2' }}>Day 1</span>
                 </div>
                 <h3 className="text-xl font-bold mb-2" style={{ color: '#1a365d', fontFamily: 'Georgia, serif' }}>
-                  November 6, 2025
+                  November 12, 2025
                 </h3>
               </div>
               <div className="space-y-3">
@@ -366,34 +381,12 @@ const Home = () => {
                   <span className="text-sm font-bold" style={{ color: '#FEF3E2' }}>Day 2</span>
                 </div>
                 <h3 className="text-xl font-bold mb-2" style={{ color: '#1a365d', fontFamily: 'Georgia, serif' }}>
-                  November 7, 2025
+                  November 13, 2025
                 </h3>
               </div>
               <div className="space-y-3">
-                <ScheduleItem time="09:00 AM" event="Hackathon Continues" />
-                <ScheduleItem time="12:00 PM" event="Gaming Competitions" />
-                <ScheduleItem time="03:00 PM" event="Project Exhibitions" />
-                <ScheduleItem time="06:00 PM" event="DJ Night" />
-              </div>
-            </div>
-
-            {/* Day 3 */}
-            <div
-              className="card p-6 hover:-translate-y-1 transition-all duration-300"
-              data-scroll="slide-up"
-              data-scroll-delay="300"
-            >
-              <div className="text-center mb-4">
-                <div className="inline-block px-4 py-2 rounded-full mb-3" style={{ background: 'linear-gradient(to right, #FA812F, #FAB12F)' }}>
-                  <span className="text-sm font-bold" style={{ color: '#FEF3E2' }}>Day 3</span>
-                </div>
-                <h3 className="text-xl font-bold mb-2" style={{ color: '#1a365d', fontFamily: 'Georgia, serif' }}>
-                  November 8, 2025
-                </h3>
-              </div>
-              <div className="space-y-3">
-                <ScheduleItem time="09:00 AM" event="Final Rounds" />
-                <ScheduleItem time="01:00 PM" event="Guest Lectures" />
+                <ScheduleItem time="09:00 AM" event="Hackathon & Competitions" />
+                <ScheduleItem time="12:00 PM" event="Gaming & Project Exhibitions" />
                 <ScheduleItem time="04:00 PM" event="Prize Distribution" />
                 <ScheduleItem time="06:00 PM" event="Closing Ceremony" />
               </div>
@@ -425,23 +418,97 @@ const Home = () => {
               </h2>
               <p className="text-base mb-8 max-w-2xl mx-auto" style={{ color: '#5C4033' }}
               >
-                Download our comprehensive rulebook to learn everything about Savishkar 2025, event guidelines, rules and regulations.
+                View our comprehensive rulebook to learn everything about Savishkar 2025, event guidelines, rules and regulations.
               </p>
               
-              <a
-                href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/rulebook/download`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-primary text-base px-8 py-3 inline-flex items-center justify-center group"
-              >
-                <Download className="mr-2 w-5 h-5" />
-                <span>Download Rulebook</span>
-                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </a>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button
+                  onClick={() => setShowRulebookModal(true)}
+                  className="btn-primary text-base px-8 py-3 inline-flex items-center justify-center group"
+                >
+                  <Eye className="mr-2 w-5 h-5" />
+                  <span>View Rulebook</span>
+                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </button>
+                
+                <a
+                  href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/rulebook/download`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-secondary text-base px-8 py-3 inline-flex items-center justify-center group"
+                >
+                  <Download className="mr-2 w-5 h-5" />
+                  <span>Download PDF</span>
+                </a>
+              </div>
             </div>
           </div>
         </div>
       </section>
+
+      {/* Rulebook Modal */}
+      <AnimatePresence>
+        {showRulebookModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md"
+            style={{ backgroundColor: 'rgba(92, 64, 51, 0.7)' }}
+            onClick={() => setShowRulebookModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="w-full max-w-6xl h-[90vh] rounded-2xl shadow-2xl overflow-hidden"
+              style={{ backgroundColor: '#FEF3E2' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-4 border-b-2" style={{ borderColor: 'rgba(92, 64, 51, 0.2)' }}>
+                <h3 className="text-2xl font-bold" style={{ color: '#5C4033', fontFamily: 'Georgia, serif' }}>
+                  Savishkar 2025 - Event Rulebook
+                </h3>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/rulebook/download`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 rounded-lg transition-all font-semibold flex items-center gap-2"
+                    style={{ 
+                      backgroundColor: 'rgba(250, 129, 47, 0.2)',
+                      color: '#FA812F',
+                      border: '2px solid rgba(250, 129, 47, 0.3)'
+                    }}
+                    title="Download PDF"
+                  >
+                    <Download className="w-5 h-5" />
+                    <span className="hidden sm:inline">Download</span>
+                  </a>
+                  <button
+                    onClick={() => setShowRulebookModal(false)}
+                    className="p-2 rounded-full hover:bg-black/10 transition-colors"
+                    style={{ color: '#5C4033' }}
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+              
+              {/* PDF Viewer */}
+              <div className="w-full h-[calc(90vh-80px)] overflow-auto">
+                <iframe
+                  src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/rulebook/view`}
+                  className="w-full h-full"
+                  title="Savishkar 2025 Rulebook"
+                  style={{ border: 'none' }}
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Countdown Timer Section */}
       <section className="py-12 relative overflow-hidden">
@@ -450,9 +517,12 @@ const Home = () => {
             className="text-center mb-8"
             data-scroll="slide-up"
           >
-            <h3 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8" style={{ color: '#1a365d', fontFamily: 'Georgia, serif' }}>
+            <h3 className="text-2xl md:text-3xl font-bold mb-2" style={{ color: '#1a365d', fontFamily: 'Georgia, serif' }}>
               Event Starts In
             </h3>
+            <p className="text-base mb-6" style={{ color: '#8b4513', fontWeight: '600' }}>
+              November 12-13, 2025 | 2 Days of Innovation
+            </p>
             <div className="grid grid-cols-4 gap-2 sm:gap-3 md:gap-8 max-w-3xl mx-auto px-2">
               <TimeBox value={timeLeft.days} label="DAYS" />
               <TimeBox value={timeLeft.hours} label="HOURS" />

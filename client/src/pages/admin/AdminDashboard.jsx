@@ -13,7 +13,9 @@ import {
   UserPlus,
   Eye,
   RefreshCw,
-  X
+  X,
+  Lock,
+  Unlock
 } from 'lucide-react';
 import API from '../../services/api';
 import toast from 'react-hot-toast';
@@ -32,6 +34,9 @@ const AdminDashboard = () => {
   const [events, setEvents] = useState([]);
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [registrationDisabled, setRegistrationDisabled] = useState(false);
+  const [togglingRegistration, setTogglingRegistration] = useState(false);
+  const [autoDisableInfo, setAutoDisableInfo] = useState(null);
 
   // Determine active tab from URL
   const getActiveTab = () => {
@@ -47,6 +52,8 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     fetchDashboardData();
+    fetchRegistrationControl();
+    fetchAutoDisableInfo();
   }, []);
 
   const fetchDashboardData = async () => {
@@ -85,6 +92,50 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchRegistrationControl = async () => {
+    try {
+      const { data } = await API.get('/admin/registration-control');
+      setRegistrationDisabled(data.userRegistrationDisabled);
+    } catch (error) {
+      console.error('Failed to fetch registration control status:', error);
+    }
+  };
+
+  const toggleRegistrationControl = async () => {
+    try {
+      setTogglingRegistration(true);
+      const newState = !registrationDisabled;
+      const { data } = await API.put('/admin/registration-control', { disabled: newState });
+      setRegistrationDisabled(data.userRegistrationDisabled);
+      toast.success(data.message);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to toggle registration control');
+    } finally {
+      setTogglingRegistration(false);
+    }
+  };
+
+  const fetchAutoDisableInfo = async () => {
+    try {
+      const { data } = await API.get('/admin/registration-auto-disable');
+      setAutoDisableInfo(data);
+    } catch (error) {
+      console.error('Failed to fetch auto-disable info:', error);
+    }
+  };
+
+  const formatTimeRemaining = (milliseconds) => {
+    if (!milliseconds || milliseconds <= 0) return 'Expired';
+    
+    const days = Math.floor(milliseconds / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((milliseconds % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (days > 0) return `${days}d ${hours}h`;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -102,12 +153,95 @@ const AdminDashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <h1 className="text-4xl md:text-5xl font-bold mb-2" style={{ fontFamily: 'Georgia, serif' }}>
-            <span className="bg-gradient-to-r from-[#FAB12F] to-[#FA812F] bg-clip-text text-transparent">
-              Admin Dashboard
-            </span>
-          </h1>
-          <p style={{ color: '#5C4033' }}>Manage events, registrations, and payments</p>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h1 className="text-4xl md:text-5xl font-bold mb-2" style={{ fontFamily: 'Georgia, serif' }}>
+                <span className="bg-gradient-to-r from-[#FAB12F] to-[#FA812F] bg-clip-text text-transparent">
+                  Admin Dashboard
+                </span>
+              </h1>
+              <p style={{ color: '#5C4033' }}>Manage events, registrations, and payments</p>
+            </div>
+            
+            {/* Registration Control Toggle */}
+            <button
+              onClick={toggleRegistrationControl}
+              disabled={togglingRegistration}
+              className="flex items-center gap-3 px-6 py-3 rounded-xl font-semibold transition-all shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={registrationDisabled 
+                ? { 
+                    background: 'linear-gradient(to right, #DC2626, #991B1B)',
+                    color: 'white'
+                  }
+                : {
+                    background: 'linear-gradient(to right, #16A34A, #15803D)',
+                    color: 'white'
+                  }
+              }
+              title={registrationDisabled ? 'Click to enable user registration' : 'Click to disable user registration'}
+            >
+              {togglingRegistration ? (
+                <RefreshCw className="w-5 h-5 animate-spin" />
+              ) : registrationDisabled ? (
+                <Lock className="w-5 h-5" />
+              ) : (
+                <Unlock className="w-5 h-5" />
+              )}
+              <div className="text-left">
+                <div className="text-sm font-bold">
+                  {registrationDisabled ? 'Registration Disabled' : 'Registration Enabled'}
+                </div>
+                <div className="text-xs opacity-90">
+                  {registrationDisabled ? 'Users cannot register' : 'Users can register'}
+                </div>
+              </div>
+            </button>
+          </div>
+
+          {/* Auto-Disable Schedule Info */}
+          {autoDisableInfo && autoDisableInfo.scheduledTime && (
+            <div className="mt-4 p-4 rounded-xl" style={{ 
+              background: 'linear-gradient(to right, #FEF3E2, #FAE8C8)',
+              border: '2px solid #FAB12F'
+            }}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Calendar className="w-5 h-5" style={{ color: '#FA812F' }} />
+                  <div>
+                    <div className="font-semibold" style={{ color: '#5C4033' }}>
+                      Auto-Disable Scheduled
+                    </div>
+                    <div className="text-sm" style={{ color: '#8b4513' }}>
+                      Registration will automatically close on{' '}
+                      <span className="font-bold">
+                        {new Date(autoDisableInfo.scheduledTime).toLocaleString('en-IN', { 
+                          timeZone: 'Asia/Kolkata',
+                          dateStyle: 'medium',
+                          timeStyle: 'short'
+                        })} IST
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                {!autoDisableInfo.hasExecuted && autoDisableInfo.timeRemaining > 0 && (
+                  <div className="px-4 py-2 rounded-lg font-semibold" style={{ 
+                    background: '#FA812F',
+                    color: 'white'
+                  }}>
+                    {formatTimeRemaining(autoDisableInfo.timeRemaining)} remaining
+                  </div>
+                )}
+                {autoDisableInfo.hasExecuted && (
+                  <div className="px-4 py-2 rounded-lg font-semibold" style={{ 
+                    background: '#DC2626',
+                    color: 'white'
+                  }}>
+                    Executed
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </motion.div>
 
         {/* Stats Cards */}
@@ -336,6 +470,18 @@ const EventsManagement = ({ events, onUpdate }) => {
       if (interval) clearInterval(interval);
     };
   }, [viewingRegistrations, autoRefresh]);
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (viewingRegistrations) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [viewingRegistrations]);
 
   const fetchRegistrations = async (eventId) => {
     try {
@@ -749,6 +895,18 @@ const PaymentsManagement = ({ registrations, onUpdate, events }) => {
   useEffect(() => {
     fetchPayments();
   }, []);
+
+  // Lock body scroll when screenshot modal is open
+  useEffect(() => {
+    if (showScreenshot) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showScreenshot]);
 
   const fetchPayments = async () => {
     try {

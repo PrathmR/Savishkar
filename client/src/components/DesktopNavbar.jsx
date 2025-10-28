@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, User, LayoutDashboard, ChevronDown, BookOpen } from 'lucide-react';
+import { LogOut, User, LayoutDashboard, ChevronDown, BookOpen, Download, X, Eye } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getImageUrl } from '../utils/imageUtils';
 
 const DesktopNavbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showRulebookModal, setShowRulebookModal] = useState(false);
   const { user, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
 
@@ -81,17 +82,14 @@ const DesktopNavbar = () => {
           <div className="flex items-center space-x-8">
             <NavLink to="/">Home</NavLink>
             <NavLink to="/events">Events</NavLink>
-            <a
-              href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/rulebook/download`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="transition-all duration-300 relative group font-bold text-sm tracking-wide flex items-center gap-1"
+            <button
+              onClick={() => setShowRulebookModal(true)}
+              className="transition-all duration-300 relative group font-bold text-sm tracking-wide"
               style={{ color: '#8b4513', fontFamily: 'Georgia, serif' }}
             >
-              <BookOpen className="w-4 h-4" />
               Rulebook
               <span className="absolute -bottom-2 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 rounded-full" style={{ backgroundColor: '#FA812F' }} />
-            </a>
+            </button>
             
             {user ? (
               <>
@@ -178,6 +176,70 @@ const DesktopNavbar = () => {
           </div>
         </div>
       </div>
+
+      {/* Rulebook Modal */}
+      <AnimatePresence>
+        {showRulebookModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 backdrop-blur-md"
+            style={{ backgroundColor: 'rgba(92, 64, 51, 0.7)' }}
+            onClick={() => setShowRulebookModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="w-full max-w-6xl h-[90vh] rounded-2xl shadow-2xl overflow-hidden"
+              style={{ backgroundColor: '#FEF3E2' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-4 border-b-2" style={{ borderColor: 'rgba(92, 64, 51, 0.2)' }}>
+                <h3 className="text-xl md:text-2xl font-bold" style={{ color: '#5C4033', fontFamily: 'Georgia, serif' }}>
+                  Savishkar 2025 - Event Rulebook
+                </h3>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/rulebook/download`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 rounded-lg transition-all font-semibold flex items-center gap-2 hover:scale-105"
+                    style={{ 
+                      backgroundColor: 'rgba(250, 129, 47, 0.2)',
+                      color: '#FA812F',
+                      border: '2px solid rgba(250, 129, 47, 0.3)'
+                    }}
+                    title="Download PDF"
+                  >
+                    <Download className="w-5 h-5" />
+                    <span className="hidden sm:inline">Download</span>
+                  </a>
+                  <button
+                    onClick={() => setShowRulebookModal(false)}
+                    className="p-2 rounded-full hover:bg-black/10 transition-colors"
+                    style={{ color: '#5C4033' }}
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+              
+              {/* PDF Viewer */}
+              <div className="w-full h-[calc(90vh-80px)] overflow-auto">
+                <iframe
+                  src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/rulebook/view`}
+                  className="w-full h-full"
+                  title="Savishkar 2025 Rulebook"
+                  style={{ border: 'none' }}
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.nav>
   );
 };
@@ -189,7 +251,7 @@ const NavLink = ({ to, children }) => (
     style={{ color: '#8b4513', fontFamily: 'Georgia, serif' }}
   >
     {children}
-    <span className="absolute -bottom-2 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 rounded-full" style={{ backgroundColor: '#8b4513' }} />
+    <span className="absolute -bottom-2 left-0 w-0 h-0.5 group-hover:w-full transition-all duration-300 rounded-full" style={{ backgroundColor: '#FA812F' }} />
   </Link>
 );
 

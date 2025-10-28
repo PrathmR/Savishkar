@@ -16,7 +16,7 @@ const Events = () => {
   const { showNotification } = useNotification();
 
   const categories = ['All', 'Technical', 'Non-Technical', 'Cultural'];
-  const departments = ['All', 'CSE', 'ECE', 'CSE(AIML)', 'CIVIL', 'Applied Science', 'Common'];
+  const departments = ['All', 'CSE', 'AIML', 'ECE', 'Mechanical', 'Civil', 'MBA', 'Applied Science', 'Common'];
 
   useEffect(() => {
     fetchEvents();

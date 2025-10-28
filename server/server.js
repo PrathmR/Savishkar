@@ -6,7 +6,6 @@ import mongoSanitize from 'express-mongo-sanitize';
 import xss from 'xss-clean';
 import hpp from 'hpp';
 import rateLimit from 'express-rate-limit';
-import compression from 'compression';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -137,11 +136,7 @@ const checkEmailConfig = async () => {
   }
 };
 
-// Run email check in background - don't block server startup
-checkEmailConfig().catch(err => {
-  console.error('⚠️  Email configuration check failed:', err.message);
-  console.error('   Email features may not work properly');
-});
+checkEmailConfig();
 
 // Check Cloudinary configuration
 const useCloudinary = process.env.USE_CLOUDINARY === 'true' && 
@@ -170,17 +165,6 @@ uploadDirs.forEach(dir => {
     console.log(`📁 Created directory: ${dir}`);
   }
 });
-
-// Compression middleware - compress all responses
-app.use(compression({
-  filter: (req, res) => {
-    if (req.headers['x-no-compression']) {
-      return false;
-    }
-    return compression.filter(req, res);
-  },
-  level: 6 // Balanced compression level
-}));
 
 // Security Middleware
 // Set security headers
@@ -274,39 +258,14 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Serve React app in production
-if (process.env.NODE_ENV === 'production') {
-  const clientBuildPath = path.join(__dirname, '../client/dist');
-  
-  // Serve static files from React build
-  app.use(express.static(clientBuildPath, {
-    maxAge: '1d',
-    etag: true,
-    lastModified: true
-  }));
-  
-  // Handle React routing - send all non-API requests to index.html
-  app.get('*', (req, res) => {
-    // Don't handle API routes
-    if (req.path.startsWith('/api/')) {
-      return res.status(404).json({
-        success: false,
-        message: 'API route not found'
-      });
-    }
-    
-    // Send React app for all other routes
-    res.sendFile(path.join(clientBuildPath, 'index.html'));
+// Keep-alive endpoint (lightweight, no database queries)
+app.get('/api/keep-alive', (req, res) => {
+  res.status(200).json({ 
+    alive: true,
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
   });
-} else {
-  // Development mode - API only
-  app.use((req, res) => {
-    res.status(404).json({
-      success: false,
-      message: 'Route not found'
-    });
-  });
-}
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -318,12 +277,36 @@ app.use((err, req, res, next) => {
   });
 });
 
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Route not found'
+  });
+});
+
 // Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📡 API URL: http://localhost:${PORT}/api`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  
+  // Start keep-alive service
+  try {
+    const keepAliveService = (await import('./utils/keepAlive.js')).default;
+    keepAliveService.start();
+  } catch (error) {
+    console.error('⚠️  Failed to start keep-alive service:', error.message);
+  }
+
+  // Start registration auto-disable scheduler
+  try {
+    const registrationAutoDisable = (await import('./services/registrationAutoDisable.js')).default;
+    await registrationAutoDisable.start();
+  } catch (error) {
+    console.error('⚠️  Failed to start registration auto-disable scheduler:', error.message);
+  }
 });
 
 export default app;

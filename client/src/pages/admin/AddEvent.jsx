@@ -39,7 +39,7 @@ const AddEvent = () => {
   });
 
   const categories = ['Technical', 'Non-Technical', 'Cultural'];
-  const departments = ['CSE', 'ECE', 'CSE(AIML)', 'CIVIL', 'Applied Science', 'Common'];
+  const departments = ['CSE', 'AIML', 'ECE', 'Mechanical', 'Civil', 'MBA', 'Applied Science', 'Common'];
 
   const handleChange = (e) => {
     const { name, value } = e.target;

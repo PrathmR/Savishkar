@@ -31,7 +31,7 @@ const eventSchema = new mongoose.Schema({
   },
   department: {
     type: String,
-    enum: ['CSE', 'ECE', 'CSE(AIML)', 'CIVIL', 'Applied Science', 'Common', 'Mech', 'MBA']
+    enum: ['CSE', 'AIML', 'ECE', 'Mechanical', 'Civil', 'MBA', 'Applied Science', 'Common']
   },
   image: {
     type: String,
@@ -89,7 +89,7 @@ const eventSchema = new mongoose.Schema({
   // Payment QR Code Details (for each event)
   paymentQRCode: {
     type: String,
-    comment: 'URL or path to QR code image'
+    comment: 'URL or path to QR code image (legacy - kept for backward compatibility)'
   },
   paymentUPI: {
     type: String,
@@ -102,6 +102,46 @@ const eventSchema = new mongoose.Schema({
   paymentInstructions: {
     type: String,
     comment: 'Special payment instructions for this event'
+  },
+  // Multiple QR Codes with automatic switching
+  qrCodes: [{
+    qrCodeUrl: {
+      type: String,
+      required: true,
+      comment: 'URL or path to QR code image'
+    },
+    upiId: {
+      type: String,
+      comment: 'UPI ID for this QR code'
+    },
+    accountName: {
+      type: String,
+      comment: 'Account holder name for this QR code'
+    },
+    usageCount: {
+      type: Number,
+      default: 0,
+      comment: 'Number of payments using this QR code'
+    },
+    maxUsage: {
+      type: Number,
+      default: 40,
+      comment: 'Maximum number of payments before switching to next QR code'
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+      comment: 'Whether this QR code is currently active'
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+  currentQRIndex: {
+    type: Number,
+    default: 0,
+    comment: 'Index of currently active QR code'
   },
   maxParticipants: {
     type: Number,
@@ -147,11 +187,6 @@ const eventSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Disable autoIndex in production to speed up deployment
-if (process.env.NODE_ENV === 'production') {
-  eventSchema.set('autoIndex', false);
-}
-
 // Virtual for registration status
 eventSchema.virtual('isFull').get(function() {
   return this.currentParticipants >= this.maxParticipants;
@@ -160,6 +195,66 @@ eventSchema.virtual('isFull').get(function() {
 // Method to increment participants
 eventSchema.methods.incrementParticipants = async function() {
   this.currentParticipants += 1;
+  await this.save();
+};
+
+// Method to get active QR code
+eventSchema.methods.getActiveQRCode = function() {
+  // If new qrCodes array exists and has items, use it
+  if (this.qrCodes && this.qrCodes.length > 0) {
+    const activeQR = this.qrCodes[this.currentQRIndex];
+    if (activeQR && activeQR.isActive) {
+      return {
+        qrCodeUrl: activeQR.qrCodeUrl,
+        upiId: activeQR.upiId,
+        accountName: activeQR.accountName,
+        usageCount: activeQR.usageCount,
+        maxUsage: activeQR.maxUsage
+      };
+    }
+  }
+  
+  // Fallback to legacy single QR code
+  return {
+    qrCodeUrl: this.paymentQRCode,
+    upiId: this.paymentUPI,
+    accountName: this.paymentAccountName,
+    usageCount: 0,
+    maxUsage: 0
+  };
+};
+
+// Method to increment QR code usage and switch if needed
+eventSchema.methods.incrementQRUsage = async function() {
+  if (!this.qrCodes || this.qrCodes.length === 0) {
+    return; // No QR codes to manage
+  }
+  
+  const currentQR = this.qrCodes[this.currentQRIndex];
+  if (!currentQR) return;
+  
+  // Increment usage count
+  currentQR.usageCount += 1;
+  
+  // Check if we need to switch to next QR code
+  if (currentQR.usageCount >= currentQR.maxUsage) {
+    // Find next active QR code
+    let nextIndex = this.currentQRIndex + 1;
+    while (nextIndex < this.qrCodes.length) {
+      if (this.qrCodes[nextIndex].isActive) {
+        this.currentQRIndex = nextIndex;
+        console.log(`✅ Switched to QR code ${nextIndex + 1} for event ${this.name}`);
+        break;
+      }
+      nextIndex++;
+    }
+    
+    // If no more QR codes available, keep using the last one
+    if (nextIndex >= this.qrCodes.length) {
+      console.log(`⚠️ No more QR codes available for event ${this.name}, continuing with current`);
+    }
+  }
+  
   await this.save();
 };
 

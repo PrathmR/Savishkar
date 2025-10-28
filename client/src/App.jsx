@@ -29,7 +29,7 @@ function App() {
     // Simulate initial app loading (checking auth, loading assets, etc.)
     const timer = setTimeout(() => {
       setIsInitialLoading(false);
-    }, 1500); // Show loading screen for 1.5 seconds minimum
+    }, 3000); // Show loading screen for 3 seconds minimum
 
     return () => clearTimeout(timer);
   }, []);

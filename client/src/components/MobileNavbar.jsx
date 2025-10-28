@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, LogOut, User, LayoutDashboard, BookOpen, Home, Calendar } from 'lucide-react';
+import { Menu, X as CloseIcon, LogOut, User, LayoutDashboard, BookOpen, Home, Calendar, Download, Eye } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getImageUrl } from '../utils/imageUtils';
 
 const MobileNavbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [showRulebookModal, setShowRulebookModal] = useState(false);
   const { user, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
 
@@ -23,6 +24,18 @@ const MobileNavbar = () => {
     // Close menu when route changes
     setIsOpen(false);
   }, [navigate]);
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (showRulebookModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showRulebookModal]);
 
   const handleLogout = () => {
     logout();
@@ -96,7 +109,7 @@ const MobileNavbar = () => {
               onClick={() => setIsOpen(!isOpen)}
               className="glass-effect p-2 rounded-lg"
             >
-              {isOpen ? <X className="w-6 h-6" style={{ color: '#FA812F' }} /> : <Menu className="w-6 h-6" style={{ color: '#FA812F' }} />}
+              {isOpen ? <CloseIcon className="w-6 h-6" style={{ color: '#FA812F' }} /> : <Menu className="w-6 h-6" style={{ color: '#FA812F' }} />}
             </button>
           </div>
         </div>
@@ -124,17 +137,16 @@ const MobileNavbar = () => {
                 <span>Events</span>
               </MobileNavLink>
               
-              <a
-                href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/rulebook/download`}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setIsOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 font-bold text-sm tracking-wide"
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  setShowRulebookModal(true);
+                }}
+                className="flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 font-bold text-sm tracking-wide w-full text-left"
                 style={{ color: '#8b4513', backgroundColor: 'rgba(250, 129, 47, 0.1)' }}
               >
-                <BookOpen className="w-5 h-5" />
                 <span>Rulebook</span>
-              </a>
+              </button>
               
               {user ? (
                 <>
@@ -210,6 +222,70 @@ const MobileNavbar = () => {
                 </>
               )}
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Rulebook Modal */}
+      <AnimatePresence>
+        {showRulebookModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 backdrop-blur-md"
+            style={{ backgroundColor: 'rgba(92, 64, 51, 0.7)' }}
+            onClick={() => setShowRulebookModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="w-full max-w-6xl h-[90vh] rounded-2xl shadow-2xl overflow-hidden"
+              style={{ backgroundColor: '#FEF3E2' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-3 border-b-2" style={{ borderColor: 'rgba(92, 64, 51, 0.2)' }}>
+                <h3 className="text-base md:text-xl font-bold" style={{ color: '#5C4033', fontFamily: 'Georgia, serif' }}>
+                  Savishkar 2025 Rulebook
+                </h3>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/rulebook/download`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-2 rounded-lg transition-all font-semibold flex items-center gap-2 hover:scale-105"
+                    style={{ 
+                      backgroundColor: 'rgba(250, 129, 47, 0.2)',
+                      color: '#FA812F',
+                      border: '2px solid rgba(250, 129, 47, 0.3)'
+                    }}
+                    title="Download PDF"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span className="hidden sm:inline text-sm">Download</span>
+                  </a>
+                  <button
+                    onClick={() => setShowRulebookModal(false)}
+                    className="p-2 rounded-full hover:bg-black/10 transition-colors"
+                    style={{ color: '#5C4033' }}
+                  >
+                    <CloseIcon className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+              
+              {/* PDF Viewer */}
+              <div className="w-full h-[calc(90vh-60px)] overflow-auto">
+                <iframe
+                  src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/rulebook/view`}
+                  className="w-full h-full"
+                  title="Savishkar 2025 Rulebook"
+                  style={{ border: 'none' }}
+                />
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

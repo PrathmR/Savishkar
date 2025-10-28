@@ -2,7 +2,6 @@ import express from 'express';
 import Payment from '../models/Payment.js';
 import Registration from '../models/Registration.js';
 import Event from '../models/Event.js';
-import sendEmail from '../utils/sendEmail.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { uploadPaymentScreenshot } from '../middleware/upload.js';
 
@@ -54,15 +53,19 @@ router.post('/create-order', protect, async (req, res) => {
 
     // Get event-specific QR code details or use default
     const event = registration.event;
+    
+    // Get active QR code from the event
+    const activeQR = event.getActiveQRCode();
+    
     const paymentDetails = {
       paymentId: payment._id,
       amount: registration.amount,
       eventName: event.name,
       registrationNumber: registration.registrationNumber,
-      // Use event-specific QR code or fallback to default
-      qrCodeUrl: event.paymentQRCode || process.env.QR_CODE_URL || '/images/payment-qr.png',
-      upiId: event.paymentUPI || process.env.UPI_ID || 'savishkar@paytm',
-      accountName: event.paymentAccountName || 'Savishkar Techfest',
+      // Use active QR code from qrCodes array, or fallback to legacy single QR code, or default
+      qrCodeUrl: activeQR.qrCodeUrl || event.paymentQRCode || process.env.QR_CODE_URL || '/images/payment-qr.png',
+      upiId: activeQR.upiId || event.paymentUPI || process.env.UPI_ID || 'savishkar@paytm',
+      accountName: activeQR.accountName || event.paymentAccountName || 'Savishkar Techfest',
       instructions: event.paymentInstructions || [
         'Scan the QR code using any UPI app',
         'Enter the exact amount shown: ₹' + registration.amount,
@@ -138,6 +141,17 @@ router.post('/offline', protect, uploadPaymentScreenshot.single('screenshot'), a
     // Cloudinary returns full URL in screenshot.path, local storage uses filename
     const screenshotUrl = screenshot.path || `${process.env.SERVER_URL || 'http://localhost:5000'}/uploads/payments/${screenshot.filename}`;
 
+    // Get the event to track which QR code was used
+    const event = await Event.findById(registration.event._id);
+    const activeQR = event ? event.getActiveQRCode() : null;
+    
+    // Prepare QR code tracking info
+    const qrCodeUsed = activeQR ? {
+      upiId: activeQR.upiId,
+      accountName: activeQR.accountName,
+      qrIndex: event.currentQRIndex
+    } : undefined;
+
     // Create or update payment record
     let payment = await Payment.findOne({ registration: registrationId });
     
@@ -151,13 +165,15 @@ router.post('/offline', protect, uploadPaymentScreenshot.single('screenshot'), a
         method: 'offline',
         utrNumber,
         screenshotUrl,
-        transactionDate: new Date()
+        transactionDate: new Date(),
+        qrCodeUsed
       });
     } else {
       payment.utrNumber = utrNumber;
       payment.screenshotUrl = screenshotUrl;
       payment.transactionDate = new Date();
       payment.method = 'offline';
+      payment.qrCodeUsed = qrCodeUsed;
       await payment.save();
     }
 
@@ -260,6 +276,7 @@ router.post('/verify', protect, async (req, res) => {
         </div>
       `;
 
+      const sendEmail = (await import('../utils/sendEmail.js')).default;
       await sendEmail({
         email: req.user.email,
         subject: `Payment Confirmed - ${registration.event.name}`,
@@ -419,6 +436,19 @@ router.put('/:id/approve', protect, authorize('admin'), async (req, res) => {
         { new: true }
       )
     ]);
+
+    // Increment QR code usage for the event (async, non-blocking)
+    setImmediate(async () => {
+      try {
+        const event = await Event.findById(payment.event);
+        if (event) {
+          await event.incrementQRUsage();
+          console.log(`✅ QR usage incremented for event: ${event.name}`);
+        }
+      } catch (error) {
+        console.error('❌ Error incrementing QR usage:', error.message);
+      }
+    });
 
     // Send response immediately, then send email asynchronously
     res.json({
@@ -582,6 +612,7 @@ router.put('/:id/reject', protect, authorize('admin'), async (req, res) => {
         </div>
       `;
 
+      const sendEmail = (await import('../utils/sendEmail.js')).default;
       await sendEmail({
         email: payment.user.email,
         subject: `Payment Verification Failed - ${payment.event.name}`,

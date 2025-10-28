@@ -508,6 +508,9 @@ const EventDetails = () => {
                 <p className="text-sm mt-1" style={{ color: '#FA812F' }}>
                   Team size: {event.teamSize.min} - {event.teamSize.max} members
                 </p>
+                <p className="text-xs mt-2 font-semibold" style={{ color: '#2d7a3e' }}>
+                  ℹ️ Only the team leader needs a Savishkar account. Other members don't need to register separately.
+                </p>
               </div>
               <button
                 onClick={() => setShowTeamModal(false)}
@@ -553,7 +556,10 @@ const EventDetails = () => {
 
                 <div className="space-y-4">
                   {teamMembers.map((member, index) => (
-                    <div key={index} className="card relative" style={{ backgroundColor: index === 0 ? 'rgba(45, 122, 62, 0.1)' : '#FFF8DC', border: index === 0 ? '2px solid rgba(45, 122, 62, 0.3)' : '2px solid rgba(250, 129, 47, 0.3)' }}>
+                    <div key={index} className="card relative" style={{ 
+                      backgroundColor: index === 0 ? 'rgba(45, 122, 62, 0.1)' : '#FFF8DC', 
+                      border: index === 0 ? '2px solid rgba(45, 122, 62, 0.3)' : '2px solid rgba(250, 129, 47, 0.3)' 
+                    }}>
                       <div className="flex justify-between items-center mb-4">
                         <h3 className="font-semibold" style={{ color: index === 0 ? '#2d7a3e' : '#5C4033' }}>
                           {index === 0 ? '✓ Member 1 (You)' : `Member ${index + 1}`}
@@ -616,70 +622,12 @@ const EventDetails = () => {
                           <input
                             type="text"
                             value={member.college}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              updateTeamMember(index, 'college', value);
-                              
-                              if (value.length > 0 && index !== 0) {
-                                const filtered = colleges.filter(college =>
-                                  college.toLowerCase().includes(value.toLowerCase())
-                                ).slice(0, 10);
-                                setCollegeSuggestions({ ...collegeSuggestions, [index]: filtered });
-                              } else {
-                                setCollegeSuggestions({ ...collegeSuggestions, [index]: [] });
-                              }
-                            }}
-                            onFocus={() => {
-                              if (member.college && member.college.length > 0 && index !== 0) {
-                                const filtered = colleges.filter(college =>
-                                  college.toLowerCase().includes(member.college.toLowerCase())
-                                ).slice(0, 10);
-                                setCollegeSuggestions({ ...collegeSuggestions, [index]: filtered });
-                              }
-                            }}
-                            onBlur={() => {
-                              setTimeout(() => setCollegeSuggestions({ ...collegeSuggestions, [index]: [] }), 200);
-                            }}
+                            onChange={(e) => updateTeamMember(index, 'college', e.target.value)}
                             className="input-field"
                             placeholder="College name (optional)"
                             readOnly={index === 0}
                             style={index === 0 ? { backgroundColor: 'rgba(45, 122, 62, 0.05)', cursor: 'not-allowed' } : {}}
-                            autoComplete="off"
                           />
-                          {/* College Suggestions Dropdown */}
-                          {collegeSuggestions[index] && collegeSuggestions[index].length > 0 && index !== 0 && (
-                            <div 
-                              className="absolute z-50 w-full mt-1 rounded-lg shadow-lg max-h-60 overflow-y-auto"
-                              style={{ 
-                                backgroundColor: '#FFF8DC', 
-                                border: '2px solid rgba(250, 129, 47, 0.3)',
-                              }}
-                            >
-                              {collegeSuggestions[index].map((college, idx) => (
-                                <div
-                                  key={idx}
-                                  onMouseDown={(e) => {
-                                    e.preventDefault();
-                                    updateTeamMember(index, 'college', college);
-                                    setCollegeSuggestions({ ...collegeSuggestions, [index]: [] });
-                                  }}
-                                  className="px-4 py-2 cursor-pointer transition-colors"
-                                  style={{ 
-                                    color: '#5C4033',
-                                    borderBottom: idx < collegeSuggestions[index].length - 1 ? '1px solid rgba(92, 64, 51, 0.1)' : 'none'
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    e.target.style.backgroundColor = 'rgba(250, 129, 47, 0.1)';
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    e.target.style.backgroundColor = 'transparent';
-                                  }}
-                                >
-                                  {college}
-                                </div>
-                              ))}
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -709,7 +657,7 @@ const EventDetails = () => {
                   ) : (
                     <>
                       <UserPlus className="w-5 h-5" />
-                      <span>Register Team</span>
+                      <span>Register Now</span>
                     </>
                   )}
                 </button>

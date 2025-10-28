@@ -211,6 +211,18 @@ const Signup = () => {
     };
   }, [stream]);
 
+  // Lock body scroll when camera modal is open
+  useEffect(() => {
+    if (showCamera) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showCamera]);
+
   const handleAvatarUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;

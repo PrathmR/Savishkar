@@ -52,6 +52,13 @@ const paymentSchema = new mongoose.Schema({
   },
   rejectionReason: String,
   
+  // QR Code tracking
+  qrCodeUsed: {
+    upiId: String,
+    accountName: String,
+    qrIndex: Number
+  },
+  
   status: {
     type: String,
     enum: ['created', 'captured', 'failed', 'refunded'],
@@ -72,11 +79,6 @@ const paymentSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
-
-// Disable autoIndex in production to speed up deployment
-if (process.env.NODE_ENV === 'production') {
-  paymentSchema.set('autoIndex', false);
-}
 
 // Indexes
 paymentSchema.index({ user: 1 });

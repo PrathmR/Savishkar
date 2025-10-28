@@ -375,4 +375,116 @@ router.delete('/settings/:key', protect, authorize('admin'), async (req, res) =>
   }
 });
 
+// @route   GET /api/admin/registration-control
+// @desc    Get global registration control status
+// @access  Private/Admin
+router.get('/registration-control', protect, authorize('admin'), async (req, res) => {
+  try {
+    const setting = await Settings.get('user_registration_disabled', 'false');
+    const isDisabled = setting === 'true';
+    
+    res.json({
+      success: true,
+      userRegistrationDisabled: isDisabled
+    });
+  } catch (error) {
+    console.error('Get registration control error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// @route   PUT /api/admin/registration-control
+// @desc    Toggle global user registration control
+// @access  Private/Admin
+router.put('/registration-control', protect, authorize('admin'), async (req, res) => {
+  try {
+    const { disabled } = req.body;
+    
+    if (typeof disabled !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        message: 'disabled field must be a boolean'
+      });
+    }
+    
+    await Settings.set('user_registration_disabled', disabled.toString(), {
+      description: 'When true, users cannot register for events. Only admins can register users.',
+      category: 'general',
+      isPublic: false,
+      updatedBy: req.user._id
+    });
+    
+    console.log(`✅ User registration ${disabled ? 'DISABLED' : 'ENABLED'} by ${req.user.name}`);
+    
+    res.json({
+      success: true,
+      message: `User registration ${disabled ? 'disabled' : 'enabled'} successfully`,
+      userRegistrationDisabled: disabled
+    });
+  } catch (error) {
+    console.error('Toggle registration control error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// @route   GET /api/admin/registration-auto-disable
+// @desc    Get registration auto-disable schedule info
+// @access  Private/Admin
+router.get('/registration-auto-disable', protect, authorize('admin'), async (req, res) => {
+  try {
+    const registrationAutoDisable = (await import('../services/registrationAutoDisable.js')).default;
+    const info = registrationAutoDisable.getScheduledTime();
+    
+    res.json({
+      success: true,
+      ...info
+    });
+  } catch (error) {
+    console.error('Get registration auto-disable info error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// @route   PUT /api/admin/registration-auto-disable
+// @desc    Update registration auto-disable scheduled time
+// @access  Private/Admin
+router.put('/registration-auto-disable', protect, authorize('admin'), async (req, res) => {
+  try {
+    const { scheduledTime } = req.body;
+    
+    if (!scheduledTime) {
+      return res.status(400).json({
+        success: false,
+        message: 'scheduledTime is required'
+      });
+    }
+
+    const registrationAutoDisable = (await import('../services/registrationAutoDisable.js')).default;
+    const result = await registrationAutoDisable.updateScheduledTime(scheduledTime);
+    
+    console.log(`✅ Registration auto-disable time updated by ${req.user.name}`);
+    
+    res.json({
+      success: true,
+      message: 'Scheduled time updated successfully',
+      ...result
+    });
+  } catch (error) {
+    console.error('Update registration auto-disable time error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
 export default router;

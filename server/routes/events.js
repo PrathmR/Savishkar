@@ -73,6 +73,40 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// @route   GET /api/events/:id/active-qr
+// @desc    Get active QR code for an event
+// @access  Public
+router.get('/:id/active-qr', async (req, res) => {
+  try {
+    const event = await Event.findById(req.params.id);
+    
+    if (!event) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Event not found' 
+      });
+    }
+    
+    const activeQR = event.getActiveQRCode();
+    
+    res.json({
+      success: true,
+      activeQR: {
+        qrCodeUrl: activeQR.qrCodeUrl,
+        upiId: activeQR.upiId,
+        accountName: activeQR.accountName,
+        usageCount: activeQR.usageCount,
+        maxUsage: activeQR.maxUsage
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
+});
+
 // @route   POST /api/events/upload-image
 // @desc    Upload event image
 // @access  Private/Admin
