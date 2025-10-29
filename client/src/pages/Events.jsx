@@ -16,9 +16,11 @@ const Events = () => {
   const { showNotification } = useNotification();
 
   const categories = ['All', 'Technical', 'Non-Technical', 'Cultural'];
-  const departments = ['All', 'CSE', 'AIML', 'ECE', 'Mechanical', 'Civil', 'MBA', 'Applied Science', 'Common'];
+  const departments = ['All', 'ECE', 'CSE', 'Mech', 'Civil', 'AIML', 'Applied Science', 'MBA', 'Common'];
 
   useEffect(() => {
+    // Scroll to top when component mounts
+    window.scrollTo(0, 0);
     fetchEvents();
   }, []);
 
@@ -61,8 +63,22 @@ const Events = () => {
     return acc;
   }, {});
 
-  // Sort departments alphabetically
-  const sortedDepartments = Object.keys(groupedByDepartment).sort();
+  // Sort departments according to the specified order
+  const departmentOrder = ['ECE', 'CSE', 'Mech', 'Civil', 'AIML', 'Applied Science', 'MBA', 'Common'];
+  const sortedDepartments = Object.keys(groupedByDepartment).sort((a, b) => {
+    const indexA = departmentOrder.indexOf(a);
+    const indexB = departmentOrder.indexOf(b);
+    
+    // If both departments are in the order list, sort by their position
+    if (indexA !== -1 && indexB !== -1) {
+      return indexA - indexB;
+    }
+    // If only one is in the list, prioritize it
+    if (indexA !== -1) return -1;
+    if (indexB !== -1) return 1;
+    // If neither is in the list, sort alphabetically
+    return a.localeCompare(b);
+  });
 
   return (
     <div className="min-h-screen pt-20 pb-12 relative overflow-hidden">

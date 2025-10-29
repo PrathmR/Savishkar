@@ -626,3 +626,17 @@ a {
   box-shadow: -5px 0 15px rgba(221, 3, 3, 0.3);
 }
 
+/* Marquee Animation for Sponsors */
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+

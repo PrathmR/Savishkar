@@ -111,6 +111,15 @@ router.post('/offline', protect, uploadPaymentScreenshot.single('screenshot'), a
       });
     }
 
+    // Check if UTR number already exists
+    const existingPayment = await Payment.findOne({ utrNumber });
+    if (existingPayment) {
+      return res.status(400).json({
+        success: false,
+        message: 'This UTR number has already been used. Please verify your UTR number or contact support if you believe this is an error.'
+      });
+    }
+
     // Find registration
     const registration = await Registration.findById(registrationId)
       .populate('event', 'name date time venue');
@@ -193,6 +202,15 @@ router.post('/offline', protect, uploadPaymentScreenshot.single('screenshot'), a
     });
   } catch (error) {
     console.error('Offline payment submission error:', error);
+    
+    // Handle duplicate UTR error
+    if (error.code === 11000 && error.keyPattern?.utrNumber) {
+      return res.status(400).json({
+        success: false,
+        message: 'This UTR number has already been used. Please verify your UTR number or contact support if you believe this is an error.'
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: error.message
@@ -211,6 +229,18 @@ router.post('/verify', protect, async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Please provide payment ID, UTR number, and screenshot'
+      });
+    }
+
+    // Check if UTR number already exists (excluding current payment)
+    const existingPayment = await Payment.findOne({ 
+      utrNumber,
+      _id: { $ne: paymentId }
+    });
+    if (existingPayment) {
+      return res.status(400).json({
+        success: false,
+        message: 'This UTR number has already been used. Please verify your UTR number or contact support if you believe this is an error.'
       });
     }
 
@@ -305,6 +335,15 @@ router.post('/verify', protect, async (req, res) => {
     });
   } catch (error) {
     console.error('Payment verification error:', error);
+    
+    // Handle duplicate UTR error
+    if (error.code === 11000 && error.keyPattern?.utrNumber) {
+      return res.status(400).json({
+        success: false,
+        message: 'This UTR number has already been used. Please verify your UTR number or contact support if you believe this is an error.'
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: error.message

@@ -277,7 +277,7 @@ const Payment = () => {
                     required
                   />
                   <p className="text-xs text-gray-400 mt-1">
-                    You can find this in your payment confirmation message
+                    You can find this in your payment confirmation message. Each UTR must be unique.
                   </p>
                 </div>
 

@@ -21,6 +21,7 @@ const Payment = lazy(() => import('./pages/Payment'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const AddEvent = lazy(() => import('./pages/admin/AddEvent'));
 const EditEvent = lazy(() => import('./pages/admin/EditEvent'));
+const BackgroundDemo = lazy(() => import('./pages/BackgroundDemo'));
 
 function App() {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -55,6 +56,7 @@ function App() {
                 <Route path="/verify-otp" element={<VerifyOTP />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password/:token" element={<ResetPassword />} />
+                <Route path="/background-demo" element={<BackgroundDemo />} />
                 
                 {/* Protected Routes */}
                 <Route path="/dashboard" element={

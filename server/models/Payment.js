@@ -40,7 +40,9 @@ const paymentSchema = new mongoose.Schema({
   // Manual Payment Verification (QR Code)
   utrNumber: {
     type: String,
-    trim: true
+    trim: true,
+    unique: true,
+    sparse: true // Allows null values but ensures uniqueness for non-null values
   },
   screenshotUrl: {
     type: String

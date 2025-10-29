@@ -25,7 +25,7 @@ const EditEvent = () => {
     description: '',
     shortDescription: '',
     category: 'Technical',
-    department: 'CSE',
+    department: 'ECE',
     date: '',
     time: '',
     venue: '',
@@ -46,7 +46,7 @@ const EditEvent = () => {
   });
 
   const categories = ['Technical', 'Non-Technical', 'Cultural'];
-  const departments = ['CSE', 'AIML', 'ECE', 'Mechanical', 'Civil', 'MBA', 'Applied Science', 'Common'];
+  const departments = ['ECE', 'CSE', 'Mech', 'Civil', 'AIML', 'Applied Science', 'MBA', 'Common'];
 
   useEffect(() => {
     fetchEvent();
