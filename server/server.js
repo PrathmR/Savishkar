@@ -11,8 +11,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import connectDB from './config/database.js';
 
-
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -31,7 +29,7 @@ dotenv.config();
 
 // Initialize express app
 const app = express();
-app.set("trust proxy", 1);
+
 // Connect to database
 connectDB();
 
@@ -179,6 +177,8 @@ app.use(helmet({
       scriptSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "https:", "http:", "blob:"],
       connectSrc: ["'self'", "http://localhost:5173", "http://localhost:5174", "http://localhost:5000"],
+      frameSrc: ["'self'", "https://res.cloudinary.com"],
+      objectSrc: ["'none'"],
     },
   },
 }));
@@ -287,19 +287,21 @@ app.use((req, res) => {
   });
 });
 
-// Start server
+// Start server (works for both Render and local development)
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, async () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📡 API URL: http://localhost:${PORT}/api`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   
-  // Start keep-alive service
-  try {
-    const keepAliveService = (await import('./utils/keepAlive.js')).default;
-    keepAliveService.start();
-  } catch (error) {
-    console.error('⚠️  Failed to start keep-alive service:', error.message);
+  // Start keep-alive service (only in development or if explicitly enabled)
+  if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_KEEP_ALIVE === 'true') {
+    try {
+      const keepAliveService = (await import('./utils/keepAlive.js')).default;
+      keepAliveService.start();
+    } catch (error) {
+      console.error('⚠️  Failed to start keep-alive service:', error.message);
+    }
   }
 
   // Start registration auto-disable scheduler

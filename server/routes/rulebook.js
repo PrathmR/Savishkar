@@ -2,6 +2,8 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import https from 'https';
+import http from 'http';
 import Settings from '../models/Settings.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -20,6 +22,34 @@ const getRulebookUrl = async () => {
   }
 };
 
+// Helper function to proxy PDF from Cloudinary with proper headers
+const proxyCloudinaryPDF = (cloudinaryUrl, res, disposition = 'attachment') => {
+  const protocol = cloudinaryUrl.startsWith('https') ? https : http;
+  
+  return new Promise((resolve, reject) => {
+    protocol.get(cloudinaryUrl, (proxyRes) => {
+      // Set appropriate headers
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `${disposition}; filename="Savishkar_2025_Rulebook.pdf"`);
+      res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 1 day
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      
+      // Copy content-length if available
+      if (proxyRes.headers['content-length']) {
+        res.setHeader('Content-Length', proxyRes.headers['content-length']);
+      }
+      
+      // Pipe the response
+      proxyRes.pipe(res);
+      
+      proxyRes.on('end', resolve);
+      proxyRes.on('error', reject);
+    }).on('error', reject);
+  });
+};
+
 /**
  * @route   GET /api/rulebook/download
  * @desc    Download the event rulebook PDF
@@ -31,8 +61,9 @@ router.get('/download', async (req, res) => {
     const rulebookUrl = await getRulebookUrl();
     
     if (rulebookUrl) {
-      console.log('📖 Redirecting to Cloudinary rulebook:', rulebookUrl);
-      return res.redirect(rulebookUrl);
+      console.log('📖 Proxying Cloudinary rulebook for download:', rulebookUrl);
+      await proxyCloudinaryPDF(rulebookUrl, res, 'attachment');
+      return;
     }
     
     // Otherwise, serve from local storage
@@ -76,11 +107,13 @@ router.get('/download', async (req, res) => {
     
   } catch (error) {
     console.error('❌ Rulebook download error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error downloading rulebook',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        message: 'Error downloading rulebook',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
   }
 });
 
@@ -95,8 +128,9 @@ router.get('/view', async (req, res) => {
     const rulebookUrl = await getRulebookUrl();
     
     if (rulebookUrl) {
-      console.log('📖 Redirecting to Cloudinary rulebook (view):', rulebookUrl);
-      return res.redirect(rulebookUrl);
+      console.log('📖 Proxying Cloudinary rulebook for viewing:', rulebookUrl);
+      await proxyCloudinaryPDF(rulebookUrl, res, 'inline');
+      return;
     }
     
     // Otherwise, serve from local storage
@@ -140,11 +174,13 @@ router.get('/view', async (req, res) => {
     
   } catch (error) {
     console.error('❌ Rulebook view error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error viewing rulebook',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        message: 'Error viewing rulebook',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
   }
 });
 

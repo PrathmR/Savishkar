@@ -1,6 +1,12 @@
 import mongoose from 'mongoose';
 
 const connectDB = async () => {
+  // Skip if already connected
+  if (mongoose.connection.readyState === 1) {
+    console.log('✅ MongoDB already connected');
+    return;
+  }
+
   console.log('\n🗄️  Connecting to MongoDB...');
   console.log('─'.repeat(50));
   
@@ -22,6 +28,8 @@ const connectDB = async () => {
     console.log('   3. Check database user credentials');
     console.log('   4. Ensure network access is configured');
     console.log('─'.repeat(50));
+    
+    // Exit with error in all environments
     process.exit(1);
   }
 };
