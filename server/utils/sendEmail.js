@@ -50,20 +50,18 @@ const createTransporter = () => {
     secure: port === 465, // true for 465, false for other ports
     auth: {
       user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS
+      pass: process.env.EMAIL_PASS.trim() // Remove any whitespace
     },
     tls: {
       rejectUnauthorized: false,
-      ciphers: 'SSLv3'
+      minVersion: 'TLSv1.2' // Use modern TLS instead of SSLv3
     },
-    connectionTimeout: 60000,  // 60 seconds
-    greetingTimeout: 30000,    // 30 seconds
-    socketTimeout: 60000,      // 60 seconds
-    pool: true,                // Use pooled connections
-    maxConnections: 5,         // Max simultaneous connections
-    maxMessages: 100,          // Max messages per connection
-    rateDelta: 1000,           // Time window for rate limiting
-    rateLimit: 5               // Max messages per rateDelta
+    connectionTimeout: 30000,  // 30 seconds (reduced from 60)
+    greetingTimeout: 20000,    // 20 seconds (reduced from 30)
+    socketTimeout: 30000,      // 30 seconds (reduced from 60)
+    pool: false,               // Disable pooling to avoid connection issues
+    debug: process.env.NODE_ENV === 'development', // Enable debug in dev
+    logger: process.env.NODE_ENV === 'development' // Enable logging in dev
   };
 
   return nodemailer.createTransport(config);
@@ -117,11 +115,11 @@ const sendEmail = async (options) => {
       async () => {
         return await withTimeout(
           transporter.sendMail(mailOptions),
-          45000 // 45 second timeout
+          35000 // 35 second timeout (slightly more than connection timeout)
         );
       },
       3, // 3 retries
-      2000 // 2 second delay between retries
+      3000 // 3 second delay between retries
     );
     
     const duration = Date.now() - startTime;
