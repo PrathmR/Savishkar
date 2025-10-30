@@ -20,7 +20,7 @@ const AddEvent = () => {
     description: '',
     shortDescription: '',
     category: 'Technical',
-    department: 'ECE',
+    department: 'AIML',
     date: '',
     time: '',
     venue: '',
@@ -39,7 +39,7 @@ const AddEvent = () => {
   });
 
   const categories = ['Technical', 'Non-Technical', 'Cultural'];
-  const departments = ['ECE', 'CSE', 'Mech', 'Civil', 'AIML', 'Applied Science', 'MBA', 'Common'];
+  const departments = ['AIML', 'CSE', 'ECE', 'Mech', 'Civil', 'MBA', 'Applied Science', 'Common'];
 
   const handleChange = (e) => {
     const { name, value } = e.target;

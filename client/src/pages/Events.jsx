@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Calendar, MapPin, Users, IndianRupee, Search, Filter, AlertCircle } from 'lucide-react';
+import { Calendar, MapPin, Users, IndianRupee, Search, Filter, AlertCircle, CheckCircle } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import API from '../services/api';
 import toast from 'react-hot-toast';
 import { useNotification } from '../context/NotificationContext';
@@ -13,16 +14,21 @@ const Events = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedDepartment, setSelectedDepartment] = useState('All');
+  const [userRegistrations, setUserRegistrations] = useState([]);
   const { showNotification } = useNotification();
+  const { isAuthenticated } = useAuth();
 
   const categories = ['All', 'Technical', 'Non-Technical', 'Cultural'];
-  const departments = ['All', 'ECE', 'CSE', 'Mech', 'Civil', 'AIML', 'Applied Science', 'MBA', 'Common'];
+  const departments = ['All', 'AIML', 'CSE', 'ECE', 'Mech', 'Civil', 'MBA', 'Applied Science', 'Common'];
 
   useEffect(() => {
     // Scroll to top when component mounts
     window.scrollTo(0, 0);
     fetchEvents();
-  }, []);
+    if (isAuthenticated) {
+      fetchUserRegistrations();
+    }
+  }, [isAuthenticated]);
 
   const fetchEvents = async () => {
     try {
@@ -41,6 +47,15 @@ const Events = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUserRegistrations = async () => {
+    try {
+      const { data } = await API.get('/registrations/my-registrations');
+      setUserRegistrations(data.registrations.map(reg => reg.event._id));
+    } catch (error) {
+      console.log('Could not fetch user registrations:', error.message);
     }
   };
 
@@ -64,7 +79,7 @@ const Events = () => {
   }, {});
 
   // Sort departments according to the specified order
-  const departmentOrder = ['ECE', 'CSE', 'Mech', 'Civil', 'AIML', 'Applied Science', 'MBA', 'Common'];
+  const departmentOrder = ['AIML', 'CSE', 'ECE', 'Mech', 'Civil', 'MBA', 'Applied Science', 'Common'];
   const sortedDepartments = Object.keys(groupedByDepartment).sort((a, b) => {
     const indexA = departmentOrder.indexOf(a);
     const indexB = departmentOrder.indexOf(b);
@@ -180,7 +195,7 @@ const Events = () => {
                 {/* Events Grid for this Department */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
                   {groupedByDepartment[department].map((event, index) => (
-                    <EventCard key={event._id} event={event} index={index} />
+                    <EventCard key={event._id} event={event} index={index} isRegistered={userRegistrations.includes(event._id)} />
                   ))}
                 </div>
               </div>
@@ -192,7 +207,7 @@ const Events = () => {
   );
 };
 
-const EventCard = ({ event, index }) => (
+const EventCard = ({ event, index, isRegistered }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -233,7 +248,15 @@ const EventCard = ({ event, index }) => (
           </span>
         )}
       </div>
-      {event.isFeatured && (
+      {isRegistered && (
+        <div className="absolute top-4 left-4">
+          <span className="px-3 py-1 text-xs font-semibold rounded-full flex items-center bg-green-600" style={{ color: '#FEF3E2' }}>
+            <CheckCircle className="w-4 h-4 mr-1" />
+            Registered
+          </span>
+        </div>
+      )}
+      {!isRegistered && event.isFeatured && (
         <div className="absolute top-4 left-4">
           <span className="px-3 py-1 text-xs font-semibold rounded-full flex items-center" style={{ background: 'linear-gradient(to right, #FA812F, #DD0303)', color: '#FEF3E2' }}>
             <img 

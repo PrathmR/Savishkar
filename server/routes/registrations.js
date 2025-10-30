@@ -54,7 +54,7 @@ router.post('/', protect, async (req, res) => {
       });
     }
     
-    // Check for time conflicts with other registered events
+    // Check for time conflicts with other registered events (notification only, doesn't block)
     const userRegistrations = await Registration.find({
       user: req.user._id,
       status: { $ne: 'cancelled' },
@@ -79,16 +79,18 @@ router.post('/', protect, async (req, res) => {
       return false;
     });
     
+    // Log conflict for tracking but don't block registration
+    let conflictWarning = null;
     if (conflictingEvent) {
-      return res.status(400).json({ 
-        success: false, 
-        message: `You are already registered for "${conflictingEvent.event.name}" which is scheduled at the same time (${conflictingEvent.event.time} on ${new Date(conflictingEvent.event.date).toLocaleDateString('en-IN')}). You cannot register for multiple events at the same time.`,
+      conflictWarning = {
+        message: `Note: You are already registered for "${conflictingEvent.event.name}" which is scheduled at the same time (${conflictingEvent.event.time} on ${new Date(conflictingEvent.event.date).toLocaleDateString('en-IN')}).`,
         conflictingEvent: {
           name: conflictingEvent.event.name,
           date: conflictingEvent.event.date,
           time: conflictingEvent.event.time
         }
-      });
+      };
+      console.log(`⚠️ Time conflict warning for user ${req.user._id}: ${conflictWarning.message}`);
     }
     
     // Generate registration number
@@ -180,7 +182,8 @@ router.post('/', protect, async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Registration successful',
-      registration
+      registration,
+      conflictWarning // Include conflict warning if exists (for frontend notification)
     });
   } catch (error) {
     res.status(500).json({ 

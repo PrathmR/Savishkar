@@ -21,7 +21,8 @@
     "clear-registrations": "node scripts/clearRegistrations.js",
     "clear-payments": "node scripts/clearPayments.js",
     "clear-notifications": "node scripts/clearNotifications.js",
-    "clear-settings": "node scripts/clearSettings.js"
+    "clear-settings": "node scripts/clearSettings.js",
+    "migrate-departments": "node scripts/migrateDepartments.js"
   },
   "keywords": [
     "techfest",

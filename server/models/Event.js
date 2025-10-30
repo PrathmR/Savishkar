@@ -31,7 +31,7 @@ const eventSchema = new mongoose.Schema({
   },
   department: {
     type: String,
-    enum: ['ECE', 'CSE', 'Mech', 'Civil', 'AIML', 'Applied Science', 'MBA', 'Common']
+    enum: ['AIML', 'CSE', 'ECE', 'Mech', 'Civil', 'MBA', 'Applied Science', 'Common']
   },
   image: {
     type: String,

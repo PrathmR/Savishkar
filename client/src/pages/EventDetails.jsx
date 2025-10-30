@@ -20,8 +20,9 @@ const EventDetails = () => {
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [teamMembers, setTeamMembers] = useState([]);
   const [teamName, setTeamName] = useState('');
-  const [conflictInfo, setConflictInfo] = useState(null);
   const [collegeSuggestions, setCollegeSuggestions] = useState({});
+  const [isRegistered, setIsRegistered] = useState(false);
+  const [userRegistration, setUserRegistration] = useState(null);
 
   // Initialize team members with logged-in user as first member when modal opens
   useEffect(() => {
@@ -37,15 +38,12 @@ const EventDetails = () => {
 
   useEffect(() => {
     fetchEvent();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
-
-  useEffect(() => {
-    if (event && isAuthenticated) {
-      checkTimeConflict();
+    if (isAuthenticated) {
+      checkRegistrationStatus();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [event, isAuthenticated]);
+  }, [id, isAuthenticated]);
+
 
   const fetchEvent = async () => {
     try {
@@ -66,19 +64,22 @@ const EventDetails = () => {
     }
   };
 
-  const checkTimeConflict = async () => {
+  const checkRegistrationStatus = async () => {
     try {
-      const { data } = await API.get(`/registrations/check-conflict/${id}`);
-      if (data.hasConflict) {
-        setConflictInfo(data.conflictingEvent);
+      const { data } = await API.get('/registrations/my-registrations');
+      const registration = data.registrations.find(reg => reg.event._id === id);
+      if (registration) {
+        setIsRegistered(true);
+        setUserRegistration(registration);
       } else {
-        setConflictInfo(null);
+        setIsRegistered(false);
+        setUserRegistration(null);
       }
     } catch (error) {
-      // Silently fail - user might not be logged in
-      console.log('Could not check conflict:', error.message);
+      console.log('Could not check registration status:', error.message);
     }
   };
+
 
   const handleRegister = async () => {
     if (!isAuthenticated) {
@@ -107,6 +108,16 @@ const EventDetails = () => {
       const { data } = await API.post('/registrations', {
         eventId: id
       });
+
+      // Show conflict warning if exists
+      if (data.conflictWarning) {
+        showNotification({
+          title: 'Time Conflict Warning',
+          message: data.conflictWarning.message,
+          icon: AlertIcon,
+          type: 'warning'
+        });
+      }
 
       showNotification({
         title: 'Registration Successful!',
@@ -174,6 +185,16 @@ const EventDetails = () => {
         teamName,
         teamMembers
       });
+
+      // Show conflict warning if exists
+      if (data.conflictWarning) {
+        showNotification({
+          title: 'Time Conflict Warning',
+          message: data.conflictWarning.message,
+          icon: AlertIcon,
+          type: 'warning'
+        });
+      }
 
       showNotification({
         title: 'Team Registration Successful!',
@@ -257,37 +278,50 @@ const EventDetails = () => {
         </Link>
       </div>
 
-      {/* Time Conflict Warning */}
-      {conflictInfo && isAuthenticated && (
+      {/* Registration Status Banner */}
+      {isRegistered && userRegistration && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             className="relative overflow-hidden rounded-xl p-5 backdrop-blur-sm"
             style={{ 
-              background: 'linear-gradient(135deg, rgba(250, 177, 47, 0.15) 0%, rgba(250, 129, 47, 0.15) 100%)',
-              border: '2px solid rgba(250, 129, 47, 0.4)',
-              boxShadow: '0 8px 32px rgba(250, 129, 47, 0.2)'
+              background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(22, 163, 74, 0.15) 100%)',
+              border: '2px solid rgba(34, 197, 94, 0.4)',
+              boxShadow: '0 8px 32px rgba(34, 197, 94, 0.2)'
             }}
           >
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0 mt-0.5">
-                <AlertTriangle className="w-6 h-6" style={{ color: '#FA812F' }} />
+                <CheckCircle className="w-6 h-6 text-green-600" />
               </div>
               <div className="flex-1">
                 <h3 className="font-bold mb-2 text-lg" style={{ color: '#1a365d', fontFamily: 'Georgia, serif' }}>
-                  Time Conflict Detected
+                  ✓ You're Registered!
                 </h3>
-                <p className="text-sm leading-relaxed font-semibold" style={{ color: '#8b4513' }}>
-                  You are already registered for <span className="font-bold" style={{ color: '#2C1810' }}>"{conflictInfo.name}"</span> which is scheduled at the same time 
-                  ({conflictInfo.time} on {new Date(conflictInfo.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}). 
-                  You cannot register for multiple events at the same time.
+                <p className="text-sm leading-relaxed font-semibold" style={{ color: '#15803d' }}>
+                  Registration Number: <span className="font-bold">{userRegistration.registrationNumber}</span>
+                  {userRegistration.teamName && (
+                    <span className="ml-4">Team: <span className="font-bold">{userRegistration.teamName}</span></span>
+                  )}
+                  <span className="block mt-2">
+                    Payment Status: <span className={`font-bold ${
+                      userRegistration.paymentStatus === 'completed' ? 'text-green-700' :
+                      userRegistration.paymentStatus === 'verification_pending' ? 'text-yellow-700' :
+                      'text-orange-700'
+                    }`}>
+                      {userRegistration.paymentStatus === 'completed' ? '✓ Completed' :
+                       userRegistration.paymentStatus === 'verification_pending' ? '⏳ Verification Pending' :
+                       userRegistration.paymentStatus === 'pending' ? '⏳ Pending' : userRegistration.paymentStatus}
+                    </span>
+                  </span>
                 </p>
               </div>
             </div>
           </motion.div>
         </div>
       )}
+
 
       {/* Event Header */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12">
@@ -362,22 +396,26 @@ const EventDetails = () => {
             </div>
 
             <button
-              onClick={handleRegister}
-              disabled={registering || event.currentParticipants >= event.maxParticipants || conflictInfo}
-              className="btn-primary text-lg flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={isRegistered ? () => navigate('/dashboard') : handleRegister}
+              disabled={registering || (!isRegistered && event.currentParticipants >= event.maxParticipants)}
+              className={`text-lg flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                isRegistered 
+                  ? 'bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg'
+                  : 'btn-primary'
+              }`}
             >
               {registering ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
                   <span>Registering...</span>
                 </>
+              ) : isRegistered ? (
+                <>
+                  <CheckCircle className="w-5 h-5" />
+                  <span>Registered ✓</span>
+                </>
               ) : event.currentParticipants >= event.maxParticipants ? (
                 <span>Event Full</span>
-              ) : conflictInfo ? (
-                <>
-                  <AlertTriangle className="w-5 h-5" />
-                  <span>Time Conflict</span>
-                </>
               ) : (
                 <>
                   <UserPlus className="w-5 h-5" />

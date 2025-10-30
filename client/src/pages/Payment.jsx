@@ -118,11 +118,21 @@ const Payment = () => {
       formData.append('screenshot', paymentData.screenshot);
       formData.append('amount', registration.amount);
 
-      await API.post('/payments/offline', formData, {
+      console.log('Submitting payment proof:', {
+        registrationId,
+        utrNumber: paymentData.utrNumber,
+        screenshotName: paymentData.screenshot.name,
+        screenshotSize: paymentData.screenshot.size,
+        amount: registration.amount
+      });
+
+      const response = await API.post('/payments/offline', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
+
+      console.log('Payment submission response:', response.data);
 
       showNotification({
         title: 'Payment Submitted Successfully!',
@@ -133,6 +143,8 @@ const Payment = () => {
         navigate('/dashboard');
       }, 2000);
     } catch (error) {
+      console.error('Payment submission error:', error);
+      console.error('Error response:', error.response?.data);
       showNotification({
         title: 'Submission Failed',
         message: error.response?.data?.message || 'Payment submission failed',
@@ -293,7 +305,6 @@ const Payment = () => {
                       onChange={handleFileChange}
                       className="hidden"
                       id="screenshot-upload"
-                      required
                     />
                     <label
                       htmlFor="screenshot-upload"
@@ -305,13 +316,16 @@ const Payment = () => {
                           <p className="text-sm font-semibold text-green-400">
                             {paymentData.screenshot.name}
                           </p>
+                          <p className="text-xs text-gray-400">
+                            Size: {(paymentData.screenshot.size / 1024).toFixed(2)} KB
+                          </p>
                           <p className="text-xs text-gray-400">Click to change</p>
                         </div>
                       ) : (
                         <div className="space-y-2">
                           <Upload className="w-12 h-12 text-gray-400 mx-auto" />
                           <p className="text-sm font-semibold">Click to upload screenshot</p>
-                          <p className="text-xs text-gray-400">PNG, JPG up to 5MB</p>
+                          <p className="text-xs text-gray-400">PNG, JPG, WebP up to 5MB</p>
                         </div>
                       )}
                     </label>

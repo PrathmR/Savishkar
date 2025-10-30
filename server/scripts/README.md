@@ -250,6 +250,32 @@ npm run clear-db  # Does all of the above in one command
 
 ---
 
+## Migration Scripts
+
+### 8. Migrate Department Names
+```bash
+node scripts/migrateDepartments.js
+```
+**What it does:**
+- Updates old department names to new standardized names
+- Maps: "Mechanical" → "Mech", "Computer Science" → "CSE", etc.
+- Shows detailed migration report
+- Fixes enum validation errors
+
+**Use case:** After updating department enum values, run this to fix existing events
+
+**Mapping:**
+- `Mechanical` → `Mech`
+- `Computer Science` / `Computer Science and Engineering` → `CSE`
+- `Electronics` / `Electronics and Communication` → `ECE`
+- `Artificial Intelligence and Machine Learning` / `AI/ML` → `AIML`
+- `Civil Engineering` → `Civil`
+- `Management` / `Business Administration` → `MBA`
+- `Applied Sciences` → `Applied Science`
+- `General` / `All` → `Common`
+
+---
+
 ## Related Scripts
 
 - `npm run create-admin` - Create a new admin user
