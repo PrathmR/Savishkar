@@ -536,13 +536,32 @@ const Home = () => {
               </div>
               
               {/* PDF Viewer */}
-              <div className="w-full h-[calc(90vh-80px)] overflow-auto">
+              <div className="w-full h-[calc(90vh-80px)] overflow-auto bg-gray-100 rounded-lg">
                 <iframe
                   src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/rulebook/view`}
                   className="w-full h-full"
                   title="Savishkar 2025 Rulebook"
                   style={{ border: 'none' }}
+                  onError={(e) => {
+                    console.error('Failed to load rulebook PDF');
+                    e.target.style.display = 'none';
+                  }}
                 />
+                <noscript>
+                  <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                    <p className="text-lg mb-4" style={{ color: '#5C4033' }}>
+                      Unable to display PDF. Please download it instead.
+                    </p>
+                    <a
+                      href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/rulebook/download`}
+                      className="btn-primary"
+                      download
+                    >
+                      <Download className="mr-2 w-5 h-5" />
+                      Download Rulebook
+                    </a>
+                  </div>
+                </noscript>
               </div>
             </motion.div>
           </motion.div>
@@ -684,15 +703,13 @@ const Home = () => {
               <h4 className="text-lg font-bold mb-2" style={{ color: '#8b4513', fontFamily: 'Georgia, serif' }}>
                 Student Co-ordinators
               </h4>
-              <p style={{ color: '#2C1810' }}>Mr. Sambhav K. +91 XXXXXXXXXX</p>
-              <p style={{ color: '#2C1810' }}>Ms. Sakshi H. +91 XXXXXXXXXX</p>
+              <p style={{ color: '#2C1810' }}>Contact: +91 XXXXXXXXXX</p>
             </div>
             <div className="text-center" data-scroll="fade" data-scroll-delay="200">
               <h4 className="text-lg font-bold mb-2" style={{ color: '#8b4513', fontFamily: 'Georgia, serif' }}>
                 Faculty Co-ordinator
               </h4>
-              <p style={{ color: '#2C1810' }}>Prof. Rahul Bannur</p>
-              <p className="mb-6" style={{ color: '#2C1810' }}>Prof. Karthik Ramdurg</p>
+              <p className="mb-6" style={{ color: '#2C1810' }}>Prof. [Name]</p>
               
               {/* Navigation Links - Below Faculty Coordinator */}
               <div className="flex items-center justify-center flex-wrap gap-4 mt-2">
@@ -727,9 +744,9 @@ const Home = () => {
             </div>
             <div className="text-center" data-scroll="fade" data-scroll-delay="300">
               <h4 className="text-lg font-bold mb-2" style={{ color: '#8b4513', fontFamily: 'Georgia, serif' }}>
-                Principal & Director
+                Principal
               </h4>
-              <p style={{ color: '#2C1810' }}>Dr. S. V. Gorabal</p>
+              <p style={{ color: '#2C1810' }}>Dr. [Name]</p>
             </div>
           </div>
           

@@ -9,6 +9,11 @@ export const getImageUrl = (imageUrl) => {
   
   // If it's already a full URL (Cloudinary or external), return as-is
   if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    // For Cloudinary URLs, ensure they use HTTPS and have proper format
+    if (imageUrl.includes('cloudinary.com')) {
+      // Replace http with https for Cloudinary
+      return imageUrl.replace('http://', 'https://');
+    }
     return imageUrl;
   }
   

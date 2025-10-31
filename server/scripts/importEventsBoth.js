@@ -7,6 +7,7 @@ import Event from '../models/Event.js';
 dotenv.config();
 
 const CSV_PATH = 'D:\\code3\\Savishkar detail final submission form (Responses).csv';
+const CSV_PATH2 = 'D:\\code3\\Savishkar_events_detail.csv';
 const XLSX_PATH = 'D:\\code3\\Savishkar detail final submission form (Responses).xlsx';
 
 const connectDB = async () => {
@@ -194,7 +195,7 @@ const dummyImages = {
 const run = async () => {
   try {
     await connectDB();
-    if (!fs.existsSync(CSV_PATH) && !fs.existsSync(XLSX_PATH)) {
+    if (!fs.existsSync(CSV_PATH) && !fs.existsSync(CSV_PATH2) && !fs.existsSync(XLSX_PATH)) {
       console.error('❌ Neither CSV nor XLSX found.');
       process.exit(1);
     }
@@ -203,6 +204,10 @@ const run = async () => {
     if (fs.existsSync(CSV_PATH)) {
       console.log('📖 Reading CSV...');
       rows = rows.concat(parseCSV(CSV_PATH));
+    }
+    if (fs.existsSync(CSV_PATH2)) {
+      console.log('📖 Reading CSV #2...');
+      rows = rows.concat(parseCSV(CSV_PATH2));
     }
     if (fs.existsSync(XLSX_PATH)) {
       console.log('📖 Reading XLSX...');

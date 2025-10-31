@@ -15,7 +15,8 @@ import {
   RefreshCw,
   X,
   Lock,
-  Unlock
+  Unlock,
+  Search
 } from 'lucide-react';
 import API from '../../services/api';
 import toast from 'react-hot-toast';
@@ -456,6 +457,7 @@ const EventsManagement = ({ events, onUpdate }) => {
   const [loadingRegistrations, setLoadingRegistrations] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Auto-refresh registrations every 10 seconds when viewing
   useEffect(() => {
@@ -535,6 +537,18 @@ const EventsManagement = ({ events, onUpdate }) => {
       toast.error(error.response?.data?.message || 'Failed to delete event');
     }
   };
+
+  // Filter events based on search query
+  const filteredEvents = events.filter(event => {
+    const query = searchQuery.toLowerCase();
+    return (
+      event.name.toLowerCase().includes(query) ||
+      event.category.toLowerCase().includes(query) ||
+      event.department?.toLowerCase().includes(query) ||
+      event.venue.toLowerCase().includes(query) ||
+      event.description?.toLowerCase().includes(query)
+    );
+  });
 
   return (
     <motion.div
@@ -728,16 +742,52 @@ const EventsManagement = ({ events, onUpdate }) => {
       )}
 
       <div className="rounded-2xl shadow-lg p-6" style={{ backgroundColor: '#FEF3E2', border: '2px solid rgba(92, 64, 51, 0.2)' }}>
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <h2 className="text-2xl font-bold" style={{ color: '#5C4033', fontFamily: 'Georgia, serif' }}>Manage Events</h2>
-          <Link 
-            to="/admin/events/new"
-            className="btn-primary flex items-center space-x-2"
-          >
-            <Plus className="w-5 h-5" />
-            <span>Add Event</span>
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+            {/* Search Bar */}
+            <div className="relative flex-1 md:min-w-[300px]">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" style={{ color: '#FA812F' }} />
+              <input
+                type="text"
+                placeholder="Search events by name, category, department..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 rounded-lg border-2 focus:outline-none focus:ring-2 transition-all"
+                style={{ 
+                  backgroundColor: 'white',
+                  borderColor: 'rgba(92, 64, 51, 0.2)',
+                  color: '#5C4033'
+                }}
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 hover:bg-gray-200 rounded-full p-1 transition-colors"
+                  title="Clear search"
+                >
+                  <X className="w-4 h-4" style={{ color: '#5C4033' }} />
+                </button>
+              )}
+            </div>
+            <Link 
+              to="/admin/events/new"
+              className="btn-primary flex items-center justify-center space-x-2 whitespace-nowrap"
+            >
+              <Plus className="w-5 h-5" />
+              <span>Add Event</span>
+            </Link>
+          </div>
         </div>
+
+        {/* Search Results Info */}
+        {searchQuery && (
+          <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: 'rgba(250, 129, 47, 0.1)', border: '1px solid rgba(250, 129, 47, 0.3)' }}>
+            <p className="text-sm" style={{ color: '#5C4033' }}>
+              Found <span className="font-bold" style={{ color: '#FA812F' }}>{filteredEvents.length}</span> event{filteredEvents.length !== 1 ? 's' : ''} matching "{searchQuery}"
+            </p>
+          </div>
+        )}
         
         {events.length === 0 ? (
           <div className="text-center py-12">
@@ -745,9 +795,21 @@ const EventsManagement = ({ events, onUpdate }) => {
             <h3 className="text-xl font-bold mb-2" style={{ color: '#5C4033' }}>No Events Yet</h3>
             <p className="mb-6" style={{ color: '#5C4033', opacity: 0.6 }}>Create your first event to get started</p>
           </div>
+        ) : filteredEvents.length === 0 ? (
+          <div className="text-center py-12">
+            <Search className="w-16 h-16 mx-auto mb-4" style={{ color: '#5C4033', opacity: 0.4 }} />
+            <h3 className="text-xl font-bold mb-2" style={{ color: '#5C4033' }}>No Events Found</h3>
+            <p className="mb-6" style={{ color: '#5C4033', opacity: 0.6 }}>Try adjusting your search query</p>
+            <button
+              onClick={() => setSearchQuery('')}
+              className="btn-secondary"
+            >
+              Clear Search
+            </button>
+          </div>
         ) : (
           <div className="space-y-4">
-            {events.map((event) => (
+            {filteredEvents.map((event) => (
               <div key={event._id} className="glass-effect p-4 rounded-lg border border-white/10 hover:border-purple-500/30 transition-all">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="flex-1">

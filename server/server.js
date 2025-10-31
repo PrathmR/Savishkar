@@ -254,26 +254,6 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/test', testRoutes);
 app.use('/api/rulebook', rulebookRoutes);
 
-// In production, serve client build and handle SPA routes
-if (process.env.NODE_ENV === 'production') {
-  const clientBuildPath = path.join(__dirname, '..', 'client', 'dist');
-  if (fs.existsSync(clientBuildPath)) {
-    app.use(express.static(clientBuildPath, {
-      maxAge: '1h',
-      etag: true
-    }));
-    // SPA fallback for non-API routes
-    app.get('*', (req, res, next) => {
-      if (req.path.startsWith('/api')) return next();
-      const indexHtml = path.join(clientBuildPath, 'index.html');
-      if (fs.existsSync(indexHtml)) {
-        return res.sendFile(indexHtml);
-      }
-      return next();
-    });
-  }
-}
-
 // Health check route
 app.get('/api/health', (req, res) => {
   res.json({ 

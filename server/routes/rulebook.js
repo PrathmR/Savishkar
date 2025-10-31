@@ -11,6 +11,15 @@ const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
+// Handle CORS preflight requests
+router.options('*', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Range');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  res.status(204).send();
+});
+
 // Helper function to get rulebook URL from database
 const getRulebookUrl = async () => {
   try {
@@ -24,17 +33,34 @@ const getRulebookUrl = async () => {
 
 // Helper function to proxy PDF from Cloudinary with proper headers
 const proxyCloudinaryPDF = (cloudinaryUrl, res, disposition = 'attachment') => {
-  const protocol = cloudinaryUrl.startsWith('https') ? https : http;
+  // Ensure HTTPS for Cloudinary URLs
+  const secureUrl = cloudinaryUrl.replace('http://', 'https://');
+  const protocol = secureUrl.startsWith('https') ? https : http;
   
   return new Promise((resolve, reject) => {
-    protocol.get(cloudinaryUrl, (proxyRes) => {
+    const request = protocol.get(secureUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    }, (proxyRes) => {
+      // Check for successful response
+      if (proxyRes.statusCode !== 200) {
+        console.error(`❌ Cloudinary returned status ${proxyRes.statusCode}`);
+        reject(new Error(`Failed to fetch PDF from Cloudinary: ${proxyRes.statusCode}`));
+        return;
+      }
+
       // Set appropriate headers
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `${disposition}; filename="Savishkar_2025_Rulebook.pdf"`);
       res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 1 day
       res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
       res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
       res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Accept-Ranges', 'bytes');
       
       // Copy content-length if available
       if (proxyRes.headers['content-length']) {
@@ -44,9 +70,26 @@ const proxyCloudinaryPDF = (cloudinaryUrl, res, disposition = 'attachment') => {
       // Pipe the response
       proxyRes.pipe(res);
       
-      proxyRes.on('end', resolve);
-      proxyRes.on('error', reject);
-    }).on('error', reject);
+      proxyRes.on('end', () => {
+        console.log('✅ PDF successfully proxied from Cloudinary');
+        resolve();
+      });
+      
+      proxyRes.on('error', (error) => {
+        console.error('❌ Error in proxy response:', error);
+        reject(error);
+      });
+    });
+
+    request.on('error', (error) => {
+      console.error('❌ Error fetching from Cloudinary:', error);
+      reject(error);
+    });
+
+    request.setTimeout(30000, () => {
+      request.destroy();
+      reject(new Error('Request timeout'));
+    });
   });
 };
 
@@ -62,8 +105,13 @@ router.get('/download', async (req, res) => {
     
     if (rulebookUrl) {
       console.log('📖 Proxying Cloudinary rulebook for download:', rulebookUrl);
-      await proxyCloudinaryPDF(rulebookUrl, res, 'attachment');
-      return;
+      try {
+        await proxyCloudinaryPDF(rulebookUrl, res, 'attachment');
+        return;
+      } catch (proxyError) {
+        console.error('❌ Failed to proxy Cloudinary PDF:', proxyError);
+        // Fall through to local file if Cloudinary fails
+      }
     }
     
     // Otherwise, serve from local storage
@@ -129,8 +177,13 @@ router.get('/view', async (req, res) => {
     
     if (rulebookUrl) {
       console.log('📖 Proxying Cloudinary rulebook for viewing:', rulebookUrl);
-      await proxyCloudinaryPDF(rulebookUrl, res, 'inline');
-      return;
+      try {
+        await proxyCloudinaryPDF(rulebookUrl, res, 'inline');
+        return;
+      } catch (proxyError) {
+        console.error('❌ Failed to proxy Cloudinary PDF:', proxyError);
+        // Fall through to local file if Cloudinary fails
+      }
     }
     
     // Otherwise, serve from local storage
