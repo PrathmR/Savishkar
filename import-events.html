@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Import Events from CSV</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .loading {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Import Events from CSV</h1>
+        <p>This tool will import events from the CSV file into the database.</p>
+        
+        <div class="form-group">
+            <label for="apiUrl">API URL:</label>
+            <input type="text" id="apiUrl" value="http://localhost:5173/api/admin/import-events-csv" placeholder="http://localhost:5173/api/admin/import-events-csv">
+        </div>
+        
+        <div class="form-group">
+            <label for="token">Admin Token (JWT):</label>
+            <input type="password" id="token" placeholder="Paste your admin JWT token here">
+            <small>You can get this from your browser's localStorage after logging in as admin</small>
+        </div>
+        
+        <button onclick="importEvents()" id="importBtn">Import Events</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function importEvents() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const token = document.getElementById('token').value;
+            const resultDiv = document.getElementById('result');
+            const btn = document.getElementById('importBtn');
+            
+            if (!token) {
+                resultDiv.innerHTML = '<div class="result error">Please provide an admin token</div>';
+                return;
+            }
+            
+            btn.disabled = true;
+            resultDiv.innerHTML = '<div class="result loading">Importing events... Please wait...</div>';
+            
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    let html = '<div class="result success">';
+                    html += `<h3>✅ ${data.message}</h3>`;
+                    html += '<h4>Statistics:</h4>';
+                    html += `<p>Total Parsed: ${data.stats.totalParsed}</p>`;
+                    html += `<p>Successfully Imported: ${data.stats.successCount}</p>`;
+                    html += `<p>Errors: ${data.stats.errorCount}</p>`;
+                    html += '<h4>Events by Department:</h4>';
+                    html += '<pre>' + JSON.stringify(data.stats.byDepartment, null, 2) + '</pre>';
+                    if (data.errors && data.errors.length > 0) {
+                        html += '<h4>Errors:</h4>';
+                        html += '<pre>' + JSON.stringify(data.errors, null, 2) + '</pre>';
+                    }
+                    html += '</div>';
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.innerHTML = `<div class="result error"><h3>❌ Error</h3><p>${data.message}</p></div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error"><h3>❌ Error</h3><p>${error.message}</p></div>`;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

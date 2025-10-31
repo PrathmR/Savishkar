@@ -10,12 +10,16 @@ const router = express.Router();
 // @access  Public
 router.get('/', async (req, res) => {
   try {
-    const { category, search, featured } = req.query;
+    const { category, department, search, featured } = req.query;
     
     let query = { isActive: true };
     
     if (category) {
       query.category = category;
+    }
+    
+    if (department) {
+      query.department = department;
     }
     
     if (featured === 'true') {
@@ -42,6 +46,34 @@ router.get('/', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: error.message 
+    });
+  }
+});
+
+// @route   GET /api/events/grouped-by-department
+// @desc    Get active events grouped by department
+// @access  Public
+router.get('/grouped-by-department', async (req, res) => {
+  try {
+    const events = await Event.find({ isActive: true })
+      .sort({ date: 1 })
+      .select('-createdBy');
+    
+    const grouped = events.reduce((acc, ev) => {
+      const dept = ev.department || 'Common';
+      if (!acc[dept]) acc[dept] = [];
+      acc[dept].push(ev);
+      return acc;
+    }, {});
+    
+    res.json({
+      success: true,
+      groups: grouped
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
     });
   }
 });

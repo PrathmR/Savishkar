@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Import - Debug</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .log { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 4px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Event Import - Debug Tool</h1>
+    
+    <div>
+        <label>API URL:</label><br>
+        <input type="text" id="apiUrl" value="http://localhost:5000/api/admin/import-events-csv" style="width: 500px; padding: 8px;">
+    </div>
+    
+    <div style="margin-top: 10px;">
+        <label>Token:</label><br>
+        <input type="password" id="token" placeholder="Paste token here" style="width: 500px; padding: 8px;">
+    </div>
+    
+    <div style="margin-top: 20px;">
+        <button onclick="testConnection()">1. Test Server Connection</button>
+        <button onclick="testAuth()">2. Test Auth</button>
+        <button onclick="importEvents()">3. Import Events</button>
+    </div>
+    
+    <div id="logs"></div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const div = document.createElement('div');
+            div.className = 'log';
+            div.style.borderLeft = type === 'error' ? '4px solid red' : 
+                                   type === 'success' ? '4px solid green' : '4px solid blue';
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            logs.appendChild(div);
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        async function testConnection() {
+            log('Testing server connection...');
+            try {
+                // Test if server is running
+                const response = await fetch('http://localhost:5000/api/events');
+                const data = await response.json();
+                log(`✅ Server is running! Found ${data.count || 0} events`, 'success');
+            } catch (error) {
+                log(`❌ Server connection failed: ${error.message}`, 'error');
+                log('Make sure server is running: cd server && npm run dev', 'error');
+            }
+        }
+
+        async function testAuth() {
+            const token = document.getElementById('token').value;
+            if (!token) {
+                log('❌ Please enter a token first', 'error');
+                return;
+            }
+            
+            log('Testing authentication...');
+            try {
+                const response = await fetch('http://localhost:5000/api/admin/dashboard', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('✅ Authentication successful! You are logged in as admin', 'success');
+                    log(`Dashboard stats: ${JSON.stringify(data.stats)}`, 'success');
+                } else {
+                    const error = await response.json();
+                    log(`❌ Authentication failed: ${error.message}`, 'error');
+                    log('Get a new token: Open browser console, type: localStorage.getItem("token")', 'error');
+                }
+            } catch (error) {
+                log(`❌ Auth test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function importEvents() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const token = document.getElementById('token').value;
+            
+            if (!token) {
+                log('❌ Please enter a token first', 'error');
+                return;
+            }
+            
+            log('Starting import...');
+            log(`URL: ${apiUrl}`);
+            
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                log(`Response status: ${response.status} ${response.statusText}`);
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    log(`✅ ${data.message}`, 'success');
+                    log(`📊 Total parsed: ${data.stats.totalParsed}`, 'success');
+                    log(`✅ Successfully imported: ${data.stats.successCount}`, 'success');
+                    log(`❌ Errors: ${data.stats.errorCount}`, data.stats.errorCount > 0 ? 'error' : 'success');
+                    log(`📁 By Department: ${JSON.stringify(data.stats.byDepartment, null, 2)}`, 'success');
+                    
+                    if (data.errors && data.errors.length > 0) {
+                        log(`Errors: ${JSON.stringify(data.errors, null, 2)}`, 'error');
+                    }
+                } else {
+                    log(`❌ Import failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Import error: ${error.message}`, 'error');
+                log(`Full error: ${error.stack}`, 'error');
+            }
+        }
+        
+        // Auto-test connection on load
+        window.onload = () => {
+            setTimeout(testConnection, 500);
+        };
+    </script>
+</body>
+</html>

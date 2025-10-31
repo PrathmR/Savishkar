@@ -684,13 +684,15 @@ const Home = () => {
               <h4 className="text-lg font-bold mb-2" style={{ color: '#8b4513', fontFamily: 'Georgia, serif' }}>
                 Student Co-ordinators
               </h4>
-              <p style={{ color: '#2C1810' }}>Contact: +91 XXXXXXXXXX</p>
+              <p style={{ color: '#2C1810' }}>Mr. Sambhav K. +91 XXXXXXXXXX</p>
+              <p style={{ color: '#2C1810' }}>Ms. Sakshi H. +91 XXXXXXXXXX</p>
             </div>
             <div className="text-center" data-scroll="fade" data-scroll-delay="200">
               <h4 className="text-lg font-bold mb-2" style={{ color: '#8b4513', fontFamily: 'Georgia, serif' }}>
                 Faculty Co-ordinator
               </h4>
-              <p className="mb-6" style={{ color: '#2C1810' }}>Prof. [Name]</p>
+              <p style={{ color: '#2C1810' }}>Prof. Rahul Bannur</p>
+              <p className="mb-6" style={{ color: '#2C1810' }}>Prof. Karthik Ramdurg</p>
               
               {/* Navigation Links - Below Faculty Coordinator */}
               <div className="flex items-center justify-center flex-wrap gap-4 mt-2">
@@ -725,9 +727,9 @@ const Home = () => {
             </div>
             <div className="text-center" data-scroll="fade" data-scroll-delay="300">
               <h4 className="text-lg font-bold mb-2" style={{ color: '#8b4513', fontFamily: 'Georgia, serif' }}>
-                Principal
+                Principal & Director
               </h4>
-              <p style={{ color: '#2C1810' }}>Dr. [Name]</p>
+              <p style={{ color: '#2C1810' }}>Dr. S. V. Gorabal</p>
             </div>
           </div>
           
