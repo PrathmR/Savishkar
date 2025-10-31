@@ -11,7 +11,7 @@
     "setup-cloudinary": "node scripts/setupCloudinary.js",
     "verify-cloudinary": "node scripts/verifyCloudinary.js",
     "test-email": "node scripts/testEmail.js",
-    "test-email-new": "node scripts/test-email.js",
+    "test-fallback-email": "node scripts/testFallbackEmail.js",
     "diagnose-email": "node scripts/diagnoseEmail.js",
     "check-email": "node scripts/checkEmailConfig.js",
     "upload-rulebook": "node scripts/uploadRulebookToCloudinary.js",

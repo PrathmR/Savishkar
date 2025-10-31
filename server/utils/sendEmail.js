@@ -1,8 +1,9 @@
 import nodemailer from 'nodemailer';
 
 /**
- * Simple SMTP Email Service
- * Uses Gmail SMTP with App Password (no OAuth required)
+ * Email Service with Fallback Support
+ * Primary: EMAIL_USER / EMAIL_PASS
+ * Fallback: FALLBACK_EMAIL_USER / FALLBACK_EMAIL_PASS
  */
 
 // Helper function to add timeout to promises
@@ -35,31 +36,45 @@ const retryOperation = async (operation, maxRetries = 3, delay = 2000) => {
   }
 };
 
-// Create SMTP transporter
-const createTransporter = () => {
-  // Check for required environment variables
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    throw new Error('EMAIL_USER and EMAIL_PASS are required in .env file');
+// Create SMTP transporter with fallback support
+const createTransporter = (useFallback = false) => {
+  let emailUser, emailPass, emailHost, emailPort;
+
+  if (useFallback && process.env.FALLBACK_EMAIL_USER && process.env.FALLBACK_EMAIL_PASS) {
+    // Use fallback credentials
+    emailUser = process.env.FALLBACK_EMAIL_USER;
+    emailPass = process.env.FALLBACK_EMAIL_PASS;
+    emailHost = process.env.FALLBACK_EMAIL_HOST || process.env.EMAIL_HOST || 'smtp.gmail.com';
+    emailPort = parseInt(process.env.FALLBACK_EMAIL_PORT || process.env.EMAIL_PORT || '587');
+    console.log('📧 Using FALLBACK email credentials');
+  } else {
+    // Use primary credentials
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      throw new Error('EMAIL_USER and EMAIL_PASS are required in .env file');
+    }
+    emailUser = process.env.EMAIL_USER;
+    emailPass = process.env.EMAIL_PASS;
+    emailHost = process.env.EMAIL_HOST || 'smtp.gmail.com';
+    emailPort = parseInt(process.env.EMAIL_PORT || '587');
   }
 
-  const port = parseInt(process.env.EMAIL_PORT) || 587;
+  const port = emailPort;
   
   const config = {
-    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+    host: emailHost,
     port: port,
     secure: port === 465, // true for 465, false for other ports
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS.trim() // Remove any whitespace
+      user: emailUser,
+      pass: emailPass
     },
     tls: {
-      rejectUnauthorized: false,
-      minVersion: 'TLSv1.2' // Use modern TLS instead of SSLv3
+      rejectUnauthorized: false
     },
-    connectionTimeout: 30000,  // 30 seconds (reduced from 60)
-    greetingTimeout: 20000,    // 20 seconds (reduced from 30)
-    socketTimeout: 30000,      // 30 seconds (reduced from 60)
-    pool: false,               // Disable pooling to avoid connection issues
+    connectionTimeout: 30000,  // 30 seconds (reduced for faster failure)
+    greetingTimeout: 20000,    // 20 seconds
+    socketTimeout: 30000,      // 30 seconds
+    pool: false,               // Disable pooling for serverless/cloud environments
     debug: process.env.NODE_ENV === 'development', // Enable debug in dev
     logger: process.env.NODE_ENV === 'development' // Enable logging in dev
   };
@@ -67,28 +82,64 @@ const createTransporter = () => {
   return nodemailer.createTransport(config);
 };
 
-// Main email sending function
+// Main email sending function with automatic fallback
 const sendEmail = async (options) => {
   const startTime = Date.now();
+  let usedFallback = false;
   
+  // Try with primary credentials first
   try {
-    console.log('\n📧 Email Send Request');
+    return await sendEmailWithCredentials(options, false, startTime);
+  } catch (primaryError) {
+    console.error('❌ Primary email failed:', primaryError.message);
+    
+    // Check if fallback credentials are available
+    if (process.env.FALLBACK_EMAIL_USER && process.env.FALLBACK_EMAIL_PASS) {
+      console.log('\n🔄 Attempting to send with FALLBACK email credentials...');
+      
+      try {
+        const result = await sendEmailWithCredentials(options, true, startTime);
+        console.log('✅ Email sent successfully using FALLBACK credentials!');
+        return result;
+      } catch (fallbackError) {
+        console.error('❌ Fallback email also failed:', fallbackError.message);
+        throw new Error(`Both primary and fallback email failed. Primary: ${primaryError.message}, Fallback: ${fallbackError.message}`);
+      }
+    } else {
+      console.error('⚠️  No fallback email credentials configured');
+      throw primaryError;
+    }
+  }
+};
+
+// Helper function to send email with specific credentials
+const sendEmailWithCredentials = async (options, useFallback, startTime) => {
+  const emailUser = useFallback ? process.env.FALLBACK_EMAIL_USER : process.env.EMAIL_USER;
+  const emailHost = useFallback ? 
+    (process.env.FALLBACK_EMAIL_HOST || process.env.EMAIL_HOST || 'smtp.gmail.com') : 
+    (process.env.EMAIL_HOST || 'smtp.gmail.com');
+  const emailPort = useFallback ? 
+    (process.env.FALLBACK_EMAIL_PORT || process.env.EMAIL_PORT || 587) : 
+    (process.env.EMAIL_PORT || 587);
+
+  try {
+    console.log(`\n📧 Email Send Request ${useFallback ? '(FALLBACK)' : '(PRIMARY)'}`);
     console.log('─'.repeat(50));
     console.log(`🕐 Time: ${new Date().toISOString()}`);
     console.log(`📬 To: ${options.email}`);
     console.log(`📝 Subject: ${options.subject}`);
-    console.log(`👤 From: ${process.env.EMAIL_USER}`);
-    console.log(`🌐 SMTP Host: ${process.env.EMAIL_HOST || 'smtp.gmail.com'}`);
-    console.log(`🔌 Port: ${process.env.EMAIL_PORT || 587}`);
+    console.log(`👤 From: ${emailUser}`);
+    console.log(`🌐 SMTP Host: ${emailHost}`);
+    console.log(`🔌 Port: ${emailPort}`);
 
     // Create transporter
-    const transporter = createTransporter();
+    const transporter = createTransporter(useFallback);
 
     // Prepare mail options with proper headers to avoid spam
     const mailOptions = {
       from: {
         name: 'Savishkar 2025',
-        address: process.env.EMAIL_USER
+        address: emailUser
       },
       to: options.email,
       subject: options.subject,
@@ -99,7 +150,7 @@ const sendEmail = async (options) => {
         'X-MSMail-Priority': 'High',
         'Importance': 'high',
         'X-Mailer': 'Savishkar Techfest',
-        'Reply-To': process.env.EMAIL_USER
+        'Reply-To': emailUser
       },
       // Add List-Unsubscribe header (helps with deliverability)
       list: {
@@ -115,11 +166,11 @@ const sendEmail = async (options) => {
       async () => {
         return await withTimeout(
           transporter.sendMail(mailOptions),
-          35000 // 35 second timeout (slightly more than connection timeout)
+          30000
         );
       },
-      3, // 3 retries
-      3000 // 3 second delay between retries
+      2,
+      3000
     );
     
     const duration = Date.now() - startTime;
@@ -132,8 +183,9 @@ const sendEmail = async (options) => {
     
     return { 
       messageId: info.messageId, 
-      service: 'smtp',
-      duration: duration
+      service: useFallback ? 'smtp-fallback' : 'smtp-primary',
+      duration: duration,
+      usedFallback: useFallback
     };
   } catch (error) {
     const duration = Date.now() - startTime;

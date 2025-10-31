@@ -30,8 +30,7 @@ dotenv.config();
 // Initialize express app
 const app = express();
 
-// Trust proxy - Required for rate limiting behind proxies (Render, Heroku, etc.)
-// This allows express-rate-limit to correctly identify users by IP
+// Trust proxy - Required for Render and other reverse proxies
 app.set('trust proxy', 1);
 
 // Connect to database
