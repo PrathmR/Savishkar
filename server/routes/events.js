@@ -107,6 +107,27 @@ router.get('/:id/active-qr', async (req, res) => {
   }
 });
 
+// @route   GET /api/events/test-cloudinary
+// @desc    Test Cloudinary configuration (for debugging)
+// @access  Private/Admin
+router.get('/test-cloudinary', protect, authorize('admin'), (req, res) => {
+  const useCloudStorage = process.env.USE_CLOUDINARY === 'true' && 
+                          process.env.CLOUDINARY_CLOUD_NAME && 
+                          process.env.CLOUDINARY_API_KEY && 
+                          process.env.CLOUDINARY_API_SECRET;
+  
+  res.json({
+    cloudinaryEnabled: useCloudStorage,
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME ? 'Set' : 'Missing',
+    apiKey: process.env.CLOUDINARY_API_KEY ? 'Set' : 'Missing',
+    apiSecret: process.env.CLOUDINARY_API_SECRET ? 'Set' : 'Missing',
+    useCloudinaryFlag: process.env.USE_CLOUDINARY,
+    message: useCloudStorage 
+      ? '✅ Cloudinary is properly configured' 
+      : '❌ Cloudinary is NOT configured. Images will use local storage.'
+  });
+});
+
 // @route   POST /api/events/upload-image
 // @desc    Upload event image
 // @access  Private/Admin
@@ -122,12 +143,22 @@ router.post('/upload-image', protect, authorize('admin'), uploadEventImage.singl
     // Cloudinary returns full URL in req.file.path, local storage uses filename
     const imageUrl = req.file.path || `${process.env.SERVER_URL || 'http://localhost:5000'}/uploads/events/${req.file.filename}`;
 
+    // Log upload details for debugging
+    console.log('📤 Image uploaded:', {
+      storage: req.file.path ? 'Cloudinary' : 'Local',
+      url: imageUrl,
+      filename: req.file.filename || 'N/A',
+      size: `${(req.file.size / 1024).toFixed(2)} KB`
+    });
+
     res.json({
       success: true,
       message: 'Image uploaded successfully',
-      imageUrl
+      imageUrl,
+      storage: req.file.path ? 'cloudinary' : 'local' // Help frontend identify storage type
     });
   } catch (error) {
+    console.error('❌ Image upload error:', error);
     res.status(500).json({
       success: false,
       message: error.message
