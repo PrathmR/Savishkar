@@ -14,7 +14,7 @@ const router = express.Router();
 // @access  Private
 router.post('/', protect, async (req, res) => {
   try {
-    const { eventId, teamName, teamMembers } = req.body;
+    const { eventId, teamName, teamMembers, registrationCategory } = req.body;
     
     // Check if event exists
     const event = await Event.findById(eventId);
@@ -97,15 +97,31 @@ router.post('/', protect, async (req, res) => {
     const count = await Registration.countDocuments();
     const registrationNumber = `SAV2025-${String(count + 1).padStart(4, '0')}`;
     
+    // Determine registration fee based on category
+    let registrationFee = event.registrationFee;
+    let selectedCategoryData = null;
+    
+    if (registrationCategory && event.registrationCategories && event.registrationCategories.length > 0) {
+      // Find the selected category
+      selectedCategoryData = event.registrationCategories.find(
+        cat => cat.categoryName === registrationCategory
+      );
+      
+      if (selectedCategoryData) {
+        registrationFee = selectedCategoryData.fee;
+      }
+    }
+    
     // Create registration
     const registration = await Registration.create({
       user: req.user._id,
       event: eventId,
       teamName,
       teamMembers: teamMembers || [],
-      amount: event.registrationFee,
+      registrationCategory: registrationCategory || null,
+      amount: registrationFee,
       registrationNumber,
-      paymentStatus: event.registrationFee === 0 ? 'completed' : 'pending'
+      paymentStatus: registrationFee === 0 ? 'completed' : 'pending'
     });
     
     // Increment participant count
@@ -126,6 +142,9 @@ router.post('/', protect, async (req, res) => {
             <p style="color: #2C1810;"><strong>Date:</strong> ${new Date(event.date).toLocaleDateString('en-IN')}</p>
             <p style="color: #2C1810;"><strong>Time:</strong> ${event.time}</p>
             <p style="color: #2C1810;"><strong>Venue:</strong> ${event.venue}</p>
+            ${registration.registrationCategory ? `
+              <p style="color: #2C1810;"><strong>Category:</strong> <span style="color: #FA812F; font-weight: bold;">${registration.registrationCategory}</span></p>
+            ` : ''}
             ${registration.teamName ? `
               <p style="color: #2C1810;"><strong>Team Name:</strong> ${registration.teamName}</p>
               <div style="margin-top: 15px;">
@@ -147,6 +166,14 @@ router.post('/', protect, async (req, res) => {
             '<div style="background: rgba(139, 69, 19, 0.1); padding: 20px; border-radius: 10px; border-left: 4px solid #8b4513; margin: 20px 0;"><p style="color: #8b4513; margin: 0; font-weight: bold;"><strong>⚠️ Please complete the payment to confirm your registration.</strong></p></div>' : 
             '<div style="background: rgba(45, 122, 62, 0.1); padding: 20px; border-radius: 10px; border-left: 4px solid #2d7a3e; margin: 20px 0;"><p style="color: #2d7a3e; margin: 0; font-weight: bold;"><strong>✅ Your registration is confirmed!</strong></p></div>'
           }
+          
+          ${event.whatsappLink ? `
+            <div style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); padding: 25px; border-radius: 12px; text-align: center; margin: 25px 0; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);">
+              <p style="color: #FEF3E2; font-size: 16px; margin: 0 0 15px 0; font-weight: 600;">📱 Join Our WhatsApp Community</p>
+              <p style="color: #FEF3E2; font-size: 14px; margin: 0 0 20px 0;">Stay updated with event announcements, schedules, and connect with other participants!</p>
+              <a href="${event.whatsappLink}" style="display: inline-block; background: #FEF3E2; color: #128C7E; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Join WhatsApp Community</a>
+            </div>
+          ` : ''}
           
           <p style="color: #2C1810; text-align: center; font-size: 16px;">See you at the event!</p>
           <hr style="margin: 30px 0; border: none; border-top: 2px solid #5C4033;">
@@ -793,6 +820,14 @@ router.post('/admin-register', protect, authorize('admin'), async (req, res) => 
             </div>`
           }
           
+          ${event.whatsappLink ? `
+            <div style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); padding: 25px; border-radius: 12px; text-align: center; margin: 25px 0; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);">
+              <p style="color: #FEF3E2; font-size: 16px; margin: 0 0 15px 0; font-weight: 600;">📱 Join Our WhatsApp Community</p>
+              <p style="color: #FEF3E2; font-size: 14px; margin: 0 0 20px 0;">Stay updated with event announcements, schedules, and connect with other participants!</p>
+              <a href="${event.whatsappLink}" style="display: inline-block; background: #FEF3E2; color: #128C7E; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Join WhatsApp Community</a>
+            </div>
+          ` : ''}
+          
           <p style="color: #2C1810; text-align: center; font-size: 16px;">See you at the event!</p>
           <hr style="margin: 30px 0; border: none; border-top: 2px solid #5C4033;">
           <p style="color: #5C4033; font-size: 12px; text-align: center; font-weight: 600;">Savishkar 2025 - Where Innovation Meets Excellence</p>
@@ -846,6 +881,14 @@ router.post('/admin-register', protect, authorize('admin'), async (req, res) => 
               <p style="color: #2d7a3e; margin: 0; font-weight: bold;"><strong>✅ Your registration is confirmed!</strong></p>
               <p style="color: #5C4033; margin: 10px 0 0 0;">Please login to your account to view more details.</p>
             </div>
+            
+            ${event.whatsappLink ? `
+              <div style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); padding: 25px; border-radius: 12px; text-align: center; margin: 25px 0; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);">
+                <p style="color: #FEF3E2; font-size: 16px; margin: 0 0 15px 0; font-weight: 600;">📱 Join Our WhatsApp Group</p>
+                <p style="color: #FEF3E2; font-size: 14px; margin: 0 0 20px 0;">Stay updated with event announcements, schedules, and connect with other participants!</p>
+                <a href="${event.whatsappLink}" style="display: inline-block; background: #FEF3E2; color: #128C7E; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Join WhatsApp Group</a>
+              </div>
+            ` : ''}
             
             <div style="text-align: center; margin: 30px 0;">
               <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/login" style="display: inline-block; background: linear-gradient(to right, #FA812F, #FAB12F); color: #FEF3E2; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">View Dashboard</a>
@@ -979,6 +1022,7 @@ router.get('/export/:eventId', protect, authorize('admin'), async (req, res) => 
       { header: 'College', key: 'college', width: 30 },
       { header: 'Team Name', key: 'teamName', width: 25 },
       { header: 'Team Size', key: 'teamSize', width: 12 },
+      { header: 'Category', key: 'category', width: 15 },
       { header: 'Amount', key: 'amount', width: 12 },
       { header: 'Payment Status', key: 'paymentStatus', width: 18 },
       { header: 'QR Code Used', key: 'qrCodeUsed', width: 25 },
@@ -1038,6 +1082,7 @@ router.get('/export/:eventId', protect, authorize('admin'), async (req, res) => 
         college: reg.user?.college || 'N/A',
         teamName: reg.teamName || 'Individual',
         teamSize: reg.teamMembers?.length || 1,
+        category: reg.registrationCategory || 'N/A',
         amount: `₹${reg.amount}`,
         paymentStatus: paymentStatusDisplay,
         qrCodeUsed: qrCodeInfo,
