@@ -56,6 +56,10 @@ const registrationSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  registrationCategory: {
+    type: String,
+    comment: 'Selected category for events with multiple registration options (e.g., "DSLR", "Mobile")'
+  },
   paidAt: Date,
   registrationNumber: {
     type: String,
