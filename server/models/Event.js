@@ -83,6 +83,27 @@ const eventSchema = new mongoose.Schema({
     required: [true, 'Please provide registration fee'],
     default: 0
   },
+  // Multiple registration categories (e.g., DSLR vs Mobile for Photography)
+  registrationCategories: [{
+    categoryName: {
+      type: String,
+      required: true,
+      comment: 'Category name (e.g., "DSLR", "Mobile")'
+    },
+    fee: {
+      type: Number,
+      required: true,
+      default: 0
+    },
+    prize: {
+      type: String,
+      comment: 'Prize specific to this category'
+    },
+    description: {
+      type: String,
+      comment: 'Description of this category'
+    }
+  }],
   registrationDeadline: {
     type: Date
   },
@@ -168,6 +189,11 @@ const eventSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
     comment: 'Controls whether users can register online for this event'
+  },
+  whatsappLink: {
+    type: String,
+    trim: true,
+    comment: 'WhatsApp group/community link for event participants'
   },
   coordinators: [{
     name: String,
